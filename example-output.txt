@@ -1,0 +1,83 @@
+================================================================================
+PROJECT EXPORT FOR LLMs
+================================================================================
+
+Project Name: easy-whole-project-to-single-text-file-for-llms
+Generated on: 2024-06-06 23:22:15 (America/Sao_Paulo / GMT-03:00)
+Total Files Processed: 16
+Export Tool: Easy Whole Project to Single Text File for LLMs v1.0.0
+Author: Jota / José Guilherme Pandolfi
+
+================================================================================
+PROJECT STRUCTURE
+================================================================================
+├── 📁 src/
+│   └── 📄 extension.ts (15.2 KB)
+├── 📁 .vscode/
+│   ├── 📄 launch.json (342 B)
+│   └── 📄 tasks.json (298 B)
+├── 📄 package.json (3.8 KB)
+├── 📄 package.nls.json (856 B)
+├── 📄 package.nls.pt-BR.json (1.1 KB)
+├── 📄 tsconfig.json (245 B)
+├── 📄 .eslintrc.json (567 B)
+├── 📄 README.md (18.5 KB)
+├── 📄 LICENSE (1.1 KB)
+├── 📄 CHANGELOG.md (2.3 KB)
+├── 📄 INSTALL.md (4.2 KB)
+├── 📄 .gitignore (398 B)
+├── 📄 .vscodeignore (156 B)
+├── 📄 build.sh (445 B)
+└── 📄 technical-details.csv (1.8 KB)
+
+================================================================================
+FILE CONTENTS
+================================================================================
+
+================================================================================
+FILE: package.json
+================================================================================
+{
+  "name": "easy-whole-project-to-single-text-file-for-llms",
+  "displayName": "Easy Whole Project to Single Text File for LLMs",
+  "description": "Automatically generates a comprehensive text file containing your entire project structure and code content whenever you save a file. Perfect for sharing complete project context with AI tools and LLMs.",
+  "version": "1.0.0",
+  "publisher": "jgpandolfi",
+  "author": {
+    "name": "Jota / José Guilherme Pandolfi",
+    "url": "https://github.com/jgpandolfi"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs.git"
+  },
+  ...
+}
+================================================================================
+
+================================================================================
+FILE: src/extension.ts
+================================================================================
+import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+import { l10n } from 'vscode';
+
+interface ProjectStructure {
+    name: string;
+    type: 'file' | 'directory';
+    path: string;
+    children?: ProjectStructure[];
+    size?: number;
+    extension?: string;
+}
+...
+
+================================================================================
+BINARY/EXCLUDED FILES (not included in text content)
+================================================================================
+- node_modules/**
+- .git/**
+- out/**
+- *.vsix
+- *.log

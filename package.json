@@ -1,0 +1,144 @@
+{
+  "name": "easy-whole-project-to-single-text-file-for-llms",
+  "displayName": "Easy Whole Project to Single Text File for LLMs",
+  "description": "Automatically generates a comprehensive text file containing your entire project structure and code content whenever you save a file. Perfect for sharing complete project context with AI tools and LLMs.",
+  "icon": "icon.png",
+  "version": "1.0.1",
+  "publisher": "jgpandolfi",
+  "author": {
+    "name": "Jota / José Guilherme Pandolfi",
+    "url": "https://github.com/jgpandolfi"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs/issues"
+  },
+  "homepage": "https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs#readme",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Snippets",
+    "Formatters"
+  ],
+  "keywords": [
+    "ai",
+    "llm",
+    "project",
+    "structure",
+    "export",
+    "documentation",
+    "code-sharing",
+    "gpt",
+    "claude",
+    "gemini"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Easy Whole Project to Single Text File for LLMs",
+      "properties": {
+        "easyProjectExport.language": {
+          "type": "string",
+          "enum": [
+            "en",
+            "pt-BR"
+          ],
+          "default": "en",
+          "description": "Language for the extension interface / Idioma para a interface da extensão"
+        },
+        "easyProjectExport.enableOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic export on file save / Habilitar exportação automática ao salvar arquivo"
+        },
+        "easyProjectExport.includeHiddenFiles": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include hidden files and directories / Incluir arquivos e diretórios ocultos"
+        },
+        "easyProjectExport.maxFileSize": {
+          "type": "number",
+          "default": 1048576,
+          "description": "Maximum file size in bytes to include (1MB default) / Tamanho máximo do arquivo em bytes para incluir (1MB padrão)"
+        },
+        "easyProjectExport.excludePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "node_modules/**",
+            ".git/**",
+            "dist/**",
+            "build/**",
+            "*.min.js",
+            "*.map",
+            ".vscode/**",
+            "*.log"
+          ],
+          "description": "Patterns to exclude from export / Padrões para excluir da exportação"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "easyProjectExport.exportProject",
+        "title": "Export Project to Text File / Exportar Projeto para Arquivo de Texto"
+      },
+      {
+        "command": "easyProjectExport.toggleAutoExport",
+        "title": "Toggle Auto Export / Alternar Exportação Automática"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "easyProjectExport.exportProject",
+          "group": "navigation",
+          "when": "explorerResourceIsFolder"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "easyProjectExport.exportProject",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "easyProjectExport.toggleAutoExport",
+          "when": "workspaceFolderCount > 0"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "eslint": "^8.28.0",
+    "typescript": "^4.9.4",
+    "@vscode/test-electron": "^2.2.0",
+    "vsce": "^2.15.0"
+  },
+  "dependencies": {
+    "@vscode/l10n": "^0.0.16"
+  }
+}

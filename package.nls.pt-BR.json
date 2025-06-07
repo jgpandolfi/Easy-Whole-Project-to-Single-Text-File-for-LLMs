@@ -1,0 +1,11 @@
+{
+  "extension.displayName": "Projeto Inteiro para Arquivo de Texto para LLMs",
+  "extension.description": "Gera automaticamente um arquivo de texto abrangente contendo toda a estrutura e conteúdo do código do seu projeto sempre que você salva um arquivo. Perfeito para compartilhar contexto completo do projeto com ferramentas de IA e LLMs.",
+  "config.language.description": "Idioma para a interface da extensão",
+  "config.enableOnSave.description": "Habilitar exportação automática ao salvar arquivo",
+  "config.includeHiddenFiles.description": "Incluir arquivos e diretórios ocultos",
+  "config.maxFileSize.description": "Tamanho máximo do arquivo em bytes para incluir (1MB padrão)",
+  "config.excludePatterns.description": "Padrões para excluir da exportação",
+  "command.exportProject.title": "Exportar Projeto para Arquivo de Texto",
+  "command.toggleAutoExport.title": "Alternar Exportação Automática"
+}

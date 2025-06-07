@@ -1,0 +1,29 @@
+Categoria,Valor,Descrição
+Nome,Easy Whole Project to Single Text File for LLMs,Nome oficial da extensão
+ID,jgpandolfi.easy-whole-project-to-single-text-file-for-llms,Identificador único no marketplace
+Versão,1.0.0,Versão inicial de lançamento
+Autor,Jota / José Guilherme Pandolfi,Desenvolvedor da extensão
+Licença,MIT,Licença de código aberto
+VS Code Mínimo,1.74.0,Versão mínima necessária do VS Code
+Linguagem,TypeScript,Linguagem de desenvolvimento
+Arquitetura,Extension Host,Executado no processo de extensão do VS Code
+Tamanho Est.,< 100KB,Tamanho estimado da extensão empacotada
+Dependências,@vscode/l10n,Biblioteca de localização
+Ativação,onStartupFinished,Ativada quando o VS Code termina inicialização
+Comandos,2,exportProject e toggleAutoExport
+Configurações,5,"language, enableOnSave, includeHiddenFiles, maxFileSize, excludePatterns"
+Idiomas,2,Inglês e Português (Brasil)
+Extensões Suportadas,50+,Tipos de arquivo de texto suportados
+Formato Saída,TXT,Arquivo de texto único com estrutura e código
+Trigger Principal,onDidSaveTextDocument,Evento de salvamento de arquivo
+Menu Contexto,Sim,Disponível no explorador de arquivos
+Paleta Comandos,Sim,Comandos acessíveis via Ctrl+Shift+P
+Output Channel,Sim,Canal de saída para logs e feedback
+Exclusões Padrão,8,"node_modules, .git, dist, build, etc."
+Limite Arquivo,1MB,Tamanho máximo padrão por arquivo
+Encoding,UTF-8,Codificação de caracteres suportada
+Timezone Support,Sim,Suporte a fuso horário na geração
+Error Handling,Completo,Tratamento abrangente de erros
+Performance,Otimizada,Exclusões inteligentes e limite de tamanho
+Cross-Platform,Sim,"Windows, macOS, Linux"
+Repository,GitHub,https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs
