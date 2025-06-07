@@ -39,7 +39,7 @@
     "gemini"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "*"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -103,7 +103,7 @@
       "explorer/context": [
         {
           "command": "easyProjectExport.exportProject",
-          "group": "navigation",
+          "group": "1_modification",
           "when": "explorerResourceIsFolder"
         }
       ],

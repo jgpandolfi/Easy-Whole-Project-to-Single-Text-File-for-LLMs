@@ -23,6 +23,7 @@ interface ExtensionConfig {
 class ProjectExporter {
     private context: vscode.ExtensionContext;
     private outputChannel: vscode.OutputChannel;
+    private modifiedFiles: Set<string> = new Set();
 
     // Supported text file extensions
     private readonly textExtensions = [
@@ -43,17 +44,22 @@ class ProjectExporter {
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
         this.outputChannel = vscode.window.createOutputChannel('Easy Project Export');
+        console.log('ProjectExporter: Constructor called');
+        this.outputChannel.appendLine('ProjectExporter: Constructor completed');
     }
 
     private getConfig(): ExtensionConfig {
+        console.log('ProjectExporter: Getting configuration');
         const config = vscode.workspace.getConfiguration('easyProjectExport');
-        return {
+        const configObj = {
             language: config.get('language', 'en'),
             enableOnSave: config.get('enableOnSave', true),
             includeHiddenFiles: config.get('includeHiddenFiles', false),
             maxFileSize: config.get('maxFileSize', 1048576), // 1MB
             excludePatterns: config.get('excludePatterns', [])
         };
+        console.log('ProjectExporter: Configuration loaded:', configObj);
+        return configObj;
     }
 
     private getLocalizedString(key: string, fallback: string): string {
@@ -234,10 +240,16 @@ class ProjectExporter {
     }
 
     public async exportProject(): Promise<void> {
+        console.log('ProjectExporter: exportProject method called');
+        this.outputChannel.appendLine('ProjectExporter: exportProject method called');
+        
         const config = this.getConfig();
 
         if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length === 0) {
-            vscode.window.showErrorMessage(this.getLocalizedString('export.noWorkspace', 'No workspace folder is open'));
+            const errorMsg = this.getLocalizedString('export.noWorkspace', 'No workspace folder is open');
+            console.error('ProjectExporter: No workspace folder found');
+            vscode.window.showErrorMessage(errorMsg);
+            this.outputChannel.appendLine('ERROR: No workspace folder found');
             return;
         }
 
@@ -245,11 +257,18 @@ class ProjectExporter {
         const workspacePath = workspaceFolder.uri.fsPath;
         const projectName = this.generateProjectName(workspacePath);
 
-        this.outputChannel.appendLine(this.getLocalizedString('export.starting', 'Starting project export...'));
+        console.log(`ProjectExporter: Starting export for project: ${projectName}`);
+        console.log(`ProjectExporter: Workspace path: ${workspacePath}`);
+        
+        const startingMsg = this.getLocalizedString('export.starting', 'Starting project export...');
+        this.outputChannel.appendLine(startingMsg);
+        vscode.window.showInformationMessage(startingMsg);
 
         try {
             // Build project structure
+            console.log('ProjectExporter: Building project structure...');
             const structure = await this.buildProjectStructure(workspacePath, config);
+            console.log(`ProjectExporter: Structure built with ${this.countFiles(structure)} files`);
 
             // Generate current date/time with timezone
             const now = new Date();
@@ -258,13 +277,14 @@ class ProjectExporter {
             const gmtString = `GMT${gmtOffset <= 0 ? '+' : '-'}${Math.abs(Math.floor(gmtOffset / 60)).toString().padStart(2, '0')}:${Math.abs(gmtOffset % 60).toString().padStart(2, '0')}`;
 
             // Generate content
+            console.log('ProjectExporter: Generating file content...');
             let content = `${'='.repeat(100)}\n`;
             content += `PROJECT EXPORT FOR LLMs\n`;
             content += `${'='.repeat(100)}\n\n`;
             content += `Project Name: ${projectName}\n`;
             content += `Generated on: ${now.toISOString().replace('T', ' ').substring(0, 19)} (${timezone} / ${gmtString})\n`;
             content += `Total Files Processed: ${this.countFiles(structure)}\n`;
-            content += `Export Tool: Easy Whole Project to Single Text File for LLMs v1.0.0\n`;
+            content += `Export Tool: Easy Whole Project to Single Text File for LLMs v1.0.2\n`;
             content += `Author: Jota / José Guilherme Pandolfi\n\n`;
 
             content += `${'='.repeat(80)}\n`;
@@ -280,16 +300,21 @@ class ProjectExporter {
             // Save file
             const fileName = `${projectName}-ESTRUTURA-E-ARQUIVOS-DO-PROJETO.txt`;
             const filePath = path.join(workspacePath, fileName);
+            
+            console.log(`ProjectExporter: Saving file to: ${filePath}`);
             await fs.promises.writeFile(filePath, content, 'utf-8');
+            console.log('ProjectExporter: File saved successfully');
 
             const message = this.getLocalizedString('export.success', 'Project exported successfully to: {0}').replace('{0}', fileName);
             vscode.window.showInformationMessage(message);
             this.outputChannel.appendLine(message);
+            console.log(`ProjectExporter: Export completed successfully: ${fileName}`);
 
         } catch (error) {
             const errorMessage = this.getLocalizedString('export.error', 'Error exporting project: {0}').replace('{0}', String(error));
+            console.error('ProjectExporter: Export failed:', error);
             vscode.window.showErrorMessage(errorMessage);
-            this.outputChannel.appendLine(errorMessage);
+            this.outputChannel.appendLine(`ERROR: ${errorMessage}`);
         }
     }
 
@@ -306,6 +331,7 @@ class ProjectExporter {
     }
 
     public toggleAutoExport(): void {
+        console.log('ProjectExporter: toggleAutoExport called');
         const config = vscode.workspace.getConfiguration('easyProjectExport');
         const currentValue = config.get('enableOnSave', true);
         config.update('enableOnSave', !currentValue, vscode.ConfigurationTarget.Global);
@@ -316,35 +342,105 @@ class ProjectExporter {
 
         vscode.window.showInformationMessage(message);
         this.outputChannel.appendLine(message);
+        console.log(`ProjectExporter: Auto-export toggled to: ${!currentValue}`);
+    }
+
+    public onFileChanged(document: vscode.TextDocument): void {
+        if (document.isDirty) {
+            this.modifiedFiles.add(document.uri.fsPath);
+            console.log(`ProjectExporter: File marked as modified: ${document.fileName}`);
+        }
+    }
+
+    public onFileSaved(document: vscode.TextDocument): void {
+        console.log(`ProjectExporter: Save event detected for: ${document.fileName}`);
+        console.log(`ProjectExporter: Document is dirty: ${document.isDirty}`);
+        console.log(`ProjectExporter: File was in modified set: ${this.modifiedFiles.has(document.uri.fsPath)}`);
+        
+        const config = this.getConfig();
+        if (config.enableOnSave) {
+            // Process if file was modified or if we want to process all saves
+            if (this.modifiedFiles.has(document.uri.fsPath) || !document.isDirty) {
+                console.log('ProjectExporter: Processing save event');
+                this.modifiedFiles.delete(document.uri.fsPath);
+                
+                // Small delay to ensure save is completed
+                setTimeout(() => {
+                    console.log('ProjectExporter: Triggering export from save event');
+                    this.exportProject();
+                }, 500);
+            } else {
+                console.log('ProjectExporter: Save event ignored (file not modified)');
+            }
+        } else {
+            console.log('ProjectExporter: Auto-export is disabled');
+        }
     }
 }
 
 export function activate(context: vscode.ExtensionContext) {
+    console.log('Easy Project Export: Extension activation starting...');
+    
+    // Check if auto-save is enabled and warn user
+    const autoSave = vscode.workspace.getConfiguration('files').get('autoSave');
+    if (autoSave !== 'off') {
+        console.log(`Easy Project Export: Auto-save is enabled (${autoSave})`);
+        vscode.window.showWarningMessage(
+            'Auto-save is enabled. This may interfere with project export triggers. Consider disabling it in File > Preferences > Settings > "auto save".'
+        );
+    }
+
     const exporter = new ProjectExporter(context);
 
-    // Register commands
+    // Register commands with detailed logging
+    console.log('Easy Project Export: Registering commands...');
+    
     const exportCommand = vscode.commands.registerCommand('easyProjectExport.exportProject', () => {
+        console.log('Easy Project Export: Export command triggered via command palette/menu');
+        vscode.window.showInformationMessage('Export command executed!');
         exporter.exportProject();
     });
 
     const toggleCommand = vscode.commands.registerCommand('easyProjectExport.toggleAutoExport', () => {
+        console.log('Easy Project Export: Toggle auto-export command triggered');
         exporter.toggleAutoExport();
     });
 
-    // Register save event listener
-    const saveListener = vscode.workspace.onDidSaveTextDocument((document) => {
-        const config = vscode.workspace.getConfiguration('easyProjectExport');
-        const enableOnSave = config.get('enableOnSave', true);
+    console.log('Easy Project Export: Commands registered successfully');
 
-        if (enableOnSave && vscode.workspace.workspaceFolders) {
-            // Add a small delay to avoid too frequent exports
-            setTimeout(() => {
-                exporter.exportProject();
-            }, 1000);
+    // Register event listeners with enhanced tracking
+    console.log('Easy Project Export: Registering event listeners...');
+    
+    const changeListener = vscode.workspace.onDidChangeTextDocument((event) => {
+        if (event.contentChanges.length > 0) {
+            exporter.onFileChanged(event.document);
         }
     });
 
-    context.subscriptions.push(exportCommand, toggleCommand, saveListener);
+    const saveListener = vscode.workspace.onDidSaveTextDocument((document) => {
+        exporter.onFileSaved(document);
+    });
+
+    console.log('Easy Project Export: Event listeners registered successfully');
+
+    context.subscriptions.push(exportCommand, toggleCommand, changeListener, saveListener);
+
+    // Confirm activation
+    const activationMessage = 'Easy Project Export: Extension activated successfully! Use Ctrl+Shift+P > "Export Project" or right-click on folder.';
+    vscode.window.showInformationMessage(activationMessage);
+    console.log('Easy Project Export: Extension activation completed successfully');
+
+    // Log current workspace info
+    if (vscode.workspace.workspaceFolders) {
+        console.log(`Easy Project Export: Found ${vscode.workspace.workspaceFolders.length} workspace folder(s):`);
+        vscode.workspace.workspaceFolders.forEach((folder, index) => {
+            console.log(`  ${index + 1}. ${folder.name} (${folder.uri.fsPath})`);
+        });
+    } else {
+        console.log('Easy Project Export: No workspace folders found');
+    }
 }
 
-export function deactivate() {}
+export function deactivate() {
+    console.log('Easy Project Export: Extension deactivated');
+}
