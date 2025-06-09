@@ -3,7 +3,7 @@
   "displayName": "Easy Whole Project to Single Text File for LLMs",
   "description": "Automatically generates a comprehensive text file containing your entire project structure and code content whenever you save a file. Perfect for sharing complete project context with AI tools and LLMs.",
   "icon": "icon.png",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "jgpandolfi",
   "author": {
     "name": "Jota / José Guilherme Pandolfi",
