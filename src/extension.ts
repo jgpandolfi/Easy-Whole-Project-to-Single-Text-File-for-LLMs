@@ -18,54 +18,52 @@ interface ExtensionConfig {
     includeHiddenFiles: boolean;
     maxFileSize: number;
     excludePatterns: string[];
+    outputFileName: string;
+    notificationLevel: string;
 }
 
-class ProjectExporter {
-    private context: vscode.ExtensionContext;
-    private outputChannel: vscode.OutputChannel;
-    private modifiedFiles: Set<string> = new Set();
+enum NotificationLevel {
+    SILENT = 'silent',
+    MINIMAL = 'minimal',
+    ALL = 'all'
+}
 
-    // Supported text file extensions
-    private readonly textExtensions = [
-        '.html', '.htm', '.css', '.js', '.jsx', '.ts', '.tsx', '.htaccess',
-        '.json', '.xml', '.txt', '.md', '.yml', '.yaml',
-        '.php', '.py', '.cs', '.java', '.cpp', '.c', '.h',
-        '.sql', '.ps1', '.bat', '.cmd', '.sh', '.vue',
-        '.svelte', '.scss', '.sass', '.less', '.ini',
-        '.conf', '.config', '.log', '.gitignore', '.env',
-        '.dockerfile', '.Dockerfile', '.makefile', '.Makefile',
-        '.go', '.rs', '.rb', '.swift', '.kt', '.scala',
-        '.r', '.R', '.m', '.mm', '.pl', '.pm', '.lua',
-        '.tcl', '.vb', '.vbs', '.asm', '.s', '.f', '.f90',
-        '.pro', '.cmake', '.gradle', '.properties', '.toml',
-        '.lock', '.cfg', '.cnf', '.inf', '.reg', '.manifest'
-    ];
+enum NotificationType {
+    INFO = 'info',
+    SUCCESS = 'success',
+    WARNING = 'warning',
+    ERROR = 'error',
+    ACTIVATION = 'activation',
+    COMMAND_EXECUTED = 'command_executed',
+    EXPORT_STARTING = 'export_starting',
+    LANGUAGE_CHANGED = 'language_changed'
+}
+class LocalizationManager {
+    private static instance: LocalizationManager;
+    private currentLanguage: string = 'en';
+    private translations: { [key: string]: { [lang: string]: string } } = {};
 
-    constructor(context: vscode.ExtensionContext) {
-        this.context = context;
-        this.outputChannel = vscode.window.createOutputChannel('Easy Project Export');
-        console.log('ProjectExporter: Constructor called');
-        this.outputChannel.appendLine('ProjectExporter: Constructor completed');
+    private constructor() {
+        this.loadTranslations();
     }
 
-    private getConfig(): ExtensionConfig {
-        console.log('ProjectExporter: Getting configuration');
-        const config = vscode.workspace.getConfiguration('easyProjectExport');
-        const configObj = {
-            language: config.get('language', 'en'),
-            enableOnSave: config.get('enableOnSave', true),
-            includeHiddenFiles: config.get('includeHiddenFiles', false),
-            maxFileSize: config.get('maxFileSize', 1048576), // 1MB
-            excludePatterns: config.get('excludePatterns', [])
-        };
-        console.log('ProjectExporter: Configuration loaded:', configObj);
-        return configObj;
+    public static getInstance(): LocalizationManager {
+        if (!LocalizationManager.instance) {
+            LocalizationManager.instance = new LocalizationManager();
+        }
+        return LocalizationManager.instance;
     }
 
-    private getLocalizedString(key: string, fallback: string): string {
-        const config = this.getConfig();
-
-        const translations: { [key: string]: { [lang: string]: string } } = {
+    private loadTranslations() {
+        this.translations = {
+            'command.exportProject.title': {
+                'en': 'Export Project to Text File',
+                'pt-BR': 'Exportar Projeto para Arquivo de Texto'
+            },
+            'command.toggleAutoExport.title': {
+                'en': 'Toggle Auto Export',
+                'pt-BR': 'Alternar Exportação Automática'
+            },
             'export.success': {
                 'en': 'Project exported successfully to: {0}',
                 'pt-BR': 'Projeto exportado com sucesso para: {0}'
@@ -89,10 +87,322 @@ class ProjectExporter {
             'export.autoDisabled': {
                 'en': 'Auto-export disabled',
                 'pt-BR': 'Exportação automática desabilitada'
+            },
+            'export.cleanedPrevious': {
+                'en': 'Cleaned previous output file: {0}',
+                'pt-BR': 'Arquivo de saída anterior removido: {0}'
+            },
+            'export.cleanupError': {
+                'en': 'Warning: Could not clean previous output file',
+                'pt-BR': 'Aviso: Não foi possível limpar arquivo de saída anterior'
+            },
+            'notification.level.silent': {
+                'en': 'Silent',
+                'pt-BR': 'Silencioso'
+            },
+            'notification.level.minimal': {
+                'en': 'Minimal',
+                'pt-BR': 'Discreto'
+            },
+            'notification.level.all': {
+                'en': 'All Messages',
+                'pt-BR': 'Todas as Mensagens'
             }
         };
+    }
 
-        return translations[key]?.[config.language] || fallback;
+    public setLanguage(language: string) {
+        this.currentLanguage = language;
+        console.log(`LocalizationManager: Language set to ${language}`);
+    }
+
+    public getString(key: string, fallback?: string): string {
+        const translation = this.translations[key]?.[this.currentLanguage];
+        if (translation) {
+            return translation;
+        }
+        
+        // Fallback para inglês se a tradução não existir
+        const englishTranslation = this.translations[key]?.['en'];
+        if (englishTranslation) {
+            return englishTranslation;
+        }
+
+        return fallback || key;
+    }
+
+    public formatString(key: string, ...args: string[]): string {
+        let text = this.getString(key);
+        args.forEach((arg, index) => {
+            text = text.replace(`{${index}}`, arg);
+        });
+        return text;
+    }
+}
+
+class NotificationManager {
+    private localizationManager: LocalizationManager;
+    private notificationLevel: NotificationLevel;
+
+    constructor(localizationManager: LocalizationManager) {
+        this.localizationManager = localizationManager;
+        this.notificationLevel = NotificationLevel.MINIMAL; // Padrão
+    }
+
+    public setNotificationLevel(level: string) {
+        this.notificationLevel = level as NotificationLevel;
+        console.log(`NotificationManager: Notification level set to ${level}`);
+    }
+
+    public shouldShowNotification(type: NotificationType): boolean {
+        switch (this.notificationLevel) {
+            case NotificationLevel.SILENT:
+                return false;
+            
+            case NotificationLevel.MINIMAL:
+                return type === NotificationType.SUCCESS || 
+                       type === NotificationType.ERROR;
+            
+            case NotificationLevel.ALL:
+                return true;
+            
+            default:
+                return true;
+        }
+    }
+
+    public showInfo(message: string, type: NotificationType = NotificationType.INFO) {
+        if (this.shouldShowNotification(type)) {
+            vscode.window.showInformationMessage(message);
+        }
+        // Sempre logar no output channel
+        console.log(`INFO: ${message}`);
+    }
+
+    public showSuccess(message: string) {
+        if (this.shouldShowNotification(NotificationType.SUCCESS)) {
+            vscode.window.showInformationMessage(message);
+        }
+        console.log(`SUCCESS: ${message}`);
+    }
+
+    public showWarning(message: string, type: NotificationType = NotificationType.WARNING) {
+        if (this.shouldShowNotification(type)) {
+            vscode.window.showWarningMessage(message);
+        }
+        console.log(`WARNING: ${message}`);
+    }
+
+    public showError(message: string) {
+        if (this.shouldShowNotification(NotificationType.ERROR)) {
+            vscode.window.showErrorMessage(message);
+        }
+        console.log(`ERROR: ${message}`);
+    }
+
+    public showLocalizedInfo(key: string, type: NotificationType = NotificationType.INFO, ...args: string[]) {
+        const message = args.length > 0 
+            ? this.localizationManager.formatString(key, ...args)
+            : this.localizationManager.getString(key);
+        this.showInfo(message, type);
+    }
+
+    public showLocalizedSuccess(key: string, ...args: string[]) {
+        const message = args.length > 0 
+            ? this.localizationManager.formatString(key, ...args)
+            : this.localizationManager.getString(key);
+        this.showSuccess(message);
+    }
+
+    public showLocalizedWarning(key: string, type: NotificationType = NotificationType.WARNING, ...args: string[]) {
+        const message = args.length > 0 
+            ? this.localizationManager.formatString(key, ...args)
+            : this.localizationManager.getString(key);
+        this.showWarning(message, type);
+    }
+
+    public showLocalizedError(key: string, ...args: string[]) {
+        const message = args.length > 0 
+            ? this.localizationManager.formatString(key, ...args)
+            : this.localizationManager.getString(key);
+        this.showError(message);
+    }
+}
+class ProjectExporter {
+    private context: vscode.ExtensionContext;
+    private outputChannel: vscode.OutputChannel;
+    private modifiedFiles: Set<string> = new Set();
+    private localizationManager: LocalizationManager;
+    private notificationManager: NotificationManager;
+
+    // Supported text file extensions
+    private readonly textExtensions = [
+        '.html', '.htm', '.css', '.js', '.jsx', '.ts', '.tsx', '.htaccess',
+        '.json', '.xml', '.txt', '.md', '.yml', '.yaml',
+        '.php', '.py', '.cs', '.java', '.cpp', '.c', '.h',
+        '.sql', '.ps1', '.bat', '.cmd', '.sh', '.vue',
+        '.svelte', '.scss', '.sass', '.less', '.ini',
+        '.conf', '.config', '.log', '.gitignore', '.env',
+        '.dockerfile', '.Dockerfile', '.makefile', '.Makefile',
+        '.go', '.rs', '.rb', '.swift', '.kt', '.scala',
+        '.r', '.R', '.m', '.mm', '.pl', '.pm', '.lua',
+        '.tcl', '.vb', '.vbs', '.asm', '.s', '.f', '.f90',
+        '.pro', '.cmake', '.gradle', '.properties', '.toml',
+        '.lock', '.cfg', '.cnf', '.inf', '.reg', '.manifest'
+    ];
+
+    constructor(context: vscode.ExtensionContext) {
+        this.context = context;
+        this.outputChannel = vscode.window.createOutputChannel('Easy Project Export');
+
+        this.localizationManager = LocalizationManager.getInstance();
+
+        this.notificationManager = new NotificationManager(this.localizationManager);
+
+        const config = this.getConfig();
+        this.localizationManager.setLanguage(config.language);
+        this.notificationManager.setNotificationLevel(config.notificationLevel);
+
+        console.log('ProjectExporter: Constructor called');
+        this.outputChannel.appendLine('ProjectExporter: Constructor completed');
+    }
+
+    private getExtensionVersion(): string {
+        try {
+            // Usar a API do VS Code para obter metadados da extensão
+            const packageJSON = this.context.extension.packageJSON;
+            const version = packageJSON.version || '1.0.0';
+            console.log(`ProjectExporter: Extension version: ${version}`);
+            return version;
+        } catch (error) {
+            console.error('ProjectExporter: Error reading extension version:', error);
+            // Fallback para versão padrão se houver erro
+            return '1.0.0';
+        }
+    }
+
+    private getExtensionInfo(): { name: string; version: string; displayName: string } {
+        try {
+            const packageJSON = this.context.extension.packageJSON;
+            return {
+                name: packageJSON.name || 'easy-whole-project-to-single-text-file-for-llms',
+                version: packageJSON.version || '1.0.0',
+                displayName: packageJSON.displayName || 'Easy Whole Project to Single Text File for LLMs'
+            };
+        } catch (error) {
+            console.error('ProjectExporter: Error reading extension info:', error);
+            return {
+                name: 'easy-whole-project-to-single-text-file-for-llms',
+                version: '1.0.0',
+                displayName: 'Easy Whole Project to Single Text File for LLMs'
+            };
+        }
+    }
+
+    private getConfig(): ExtensionConfig {
+        console.log('ProjectExporter: Getting configuration');
+        const config = vscode.workspace.getConfiguration('easyProjectExport');
+        const configObj = {
+            language: config.get('language', 'en'),
+            enableOnSave: config.get('enableOnSave', true),
+            includeHiddenFiles: config.get('includeHiddenFiles', false),
+            maxFileSize: config.get('maxFileSize', 1048576), // 1MB
+            excludePatterns: config.get('excludePatterns', []),
+            outputFileName: config.get('outputFileName', '{workspaceName}-output'),
+            notificationLevel: config.get('notificationLevel', 'minimal')
+        };
+        console.log('ProjectExporter: Configuration loaded:', configObj);
+        return configObj;
+    }
+
+    public updateConfig(config: ExtensionConfig) {
+        this.localizationManager.setLanguage(config.language);
+        this.notificationManager.setNotificationLevel(config.notificationLevel); // NOVA LINHA
+        console.log(`ProjectExporter: Configuration updated`);
+    }
+
+    private getExpectedOutputFileName(workspacePath: string): string {
+        const config = this.getConfig();
+        return this.generateOutputFileName(config, workspacePath);
+    }
+
+    private async deleteExistingOutputFile(workspacePath: string): Promise<void> {
+        try {
+            const outputFileName = this.getExpectedOutputFileName(workspacePath);
+            const outputFilePath = path.join(workspacePath, outputFileName);
+            
+            console.log(`ProjectExporter: Checking for existing output file: ${outputFilePath}`);
+            
+            // Verificar se o arquivo existe
+            try {
+                await fs.promises.access(outputFilePath);
+                console.log(`ProjectExporter: Found existing output file, deleting: ${outputFileName}`);
+                
+                // Deletar o arquivo existente
+                await fs.promises.unlink(outputFilePath);
+                console.log(`ProjectExporter: Successfully deleted existing output file: ${outputFileName}`);
+                
+                // Informar usuário sobre a limpeza
+                const message = this.getLocalizedString('export.cleanedPrevious', `Cleaned previous output file: ${outputFileName}`);
+                this.outputChannel.appendLine(message);
+                
+            } catch (accessError) {
+                // Arquivo não existe, ok para prosseguir
+                console.log(`ProjectExporter: No existing output file found: ${outputFileName}`);
+            }
+            
+        } catch (error) {
+            console.error('ProjectExporter: Error during output file cleanup:', error);
+            // Não falhar a operação se a limpeza falhar
+            const errorMsg = this.getLocalizedString('export.cleanupError', 'Warning: Could not clean previous output file');
+            this.outputChannel.appendLine(`WARNING: ${errorMsg} - ${error}`);
+        }
+    }
+
+    private isCurrentOutputFile(filePath: string, workspacePath: string): boolean {
+        const expectedOutputFileName = this.getExpectedOutputFileName(workspacePath);
+        const fileName = path.basename(filePath);
+        
+        const isCurrentOutput = fileName === expectedOutputFileName;
+        
+        if (isCurrentOutput) {
+            console.log(`ProjectExporter: Excluding current output file: ${fileName}`);
+        }
+        
+        return isCurrentOutput;
+    }
+
+    private isLikelyOutputFile(filePath: string): boolean {
+        const fileName = path.basename(filePath);
+        
+        // Padrões que indicam arquivo de output da extensão
+        const outputPatterns = [
+            /-ESTRUTURA-E-ARQUIVOS-DO-PROJETO\.txt$/i,
+            /-output\.txt$/i,
+            /-project-export\.txt$/i,
+            /-full-project\.txt$/i
+        ];
+        
+        const isLikelyOutput = outputPatterns.some(pattern => pattern.test(fileName));
+        
+        if (isLikelyOutput) {
+            console.log(`ProjectExporter: Excluding likely output file: ${fileName}`);
+        }
+        
+        return isLikelyOutput;
+    }
+
+    private getLocalizedString(key: string, fallback?: string): string {
+        return this.localizationManager.getString(key, fallback);
+    }
+
+    private formatLocalizedString(key: string, ...args: string[]): string {
+        return this.localizationManager.formatString(key, ...args);
+    }
+
+    public updateLanguage(language: string) {
+        this.localizationManager.setLanguage(language);
+        console.log(`ProjectExporter: Language updated to ${language}`);
     }
 
     private isTextFile(filePath: string): boolean {
@@ -101,22 +411,97 @@ class ProjectExporter {
     }
 
     private shouldExcludeFile(filePath: string, config: ExtensionConfig): boolean {
-        const relativePath = path.relative(vscode.workspace.workspaceFolders![0].uri.fsPath, filePath);
+        const workspaceRoot = vscode.workspace.workspaceFolders![0].uri.fsPath;
+        const relativePath = path.relative(workspaceRoot, filePath);
+        const fileName = path.basename(filePath);
+        
+        const normalizedRelativePath = relativePath.replace(/\\/g, '/');
 
-        // Check if file is hidden and we should exclude hidden files
-        if (!config.includeHiddenFiles && path.basename(filePath).startsWith('.')) {
+        if (this.isCurrentOutputFile(filePath, workspaceRoot)) {
+            console.log(`ProjectExporter: Excluding current output file: ${normalizedRelativePath}`);
             return true;
         }
 
-        // Check exclude patterns
+        if (this.isLikelyOutputFile(filePath)) {
+            console.log(`ProjectExporter: Excluding likely output file: ${normalizedRelativePath}`);
+            return true;
+        }
+        
+        console.log(`ProjectExporter: Checking exclusion for: ${normalizedRelativePath}`);
+
+        if (!config.includeHiddenFiles && fileName.startsWith('.')) {
+            console.log(`ProjectExporter: Excluding hidden file: ${normalizedRelativePath}`);
+            return true;
+        }
+
         for (const pattern of config.excludePatterns) {
-            const regex = new RegExp(pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*'));
-            if (regex.test(relativePath) || regex.test(path.basename(filePath))) {
+            if (this.matchesPattern(normalizedRelativePath, pattern)) {
+                console.log(`ProjectExporter: Excluding by pattern "${pattern}": ${normalizedRelativePath}`);
                 return true;
             }
         }
 
         return false;
+    }
+
+    private matchesPattern(filePath: string, pattern: string): boolean {
+        const normalizedPattern = pattern.replace(/\\/g, '/');
+        
+        if (normalizedPattern.endsWith('/**')) {
+            const basePattern = normalizedPattern.slice(0, -3); // Remove '/**'
+            return filePath.startsWith(basePattern + '/') || filePath === basePattern;
+        }
+        
+        if (normalizedPattern.endsWith('**')) {
+            const basePattern = normalizedPattern.slice(0, -2); // Remove '**'
+            return filePath.startsWith(basePattern);
+        }
+        
+        let regexPattern = normalizedPattern
+            .replace(/\./g, '\\.')
+            .replace(/\*\*/g, '.*')
+            .replace(/\*/g, '[^/]*')
+            .replace(/\?/g, '[^/]');
+        
+        if (!regexPattern.startsWith('^')) {
+            regexPattern = '^' + regexPattern;
+        }
+        if (!regexPattern.endsWith('$')) {
+            regexPattern = regexPattern + '$';
+        }
+        
+        try {
+            const regex = new RegExp(regexPattern);
+            const matches = regex.test(filePath);
+            
+            // Debug logging
+            if (matches) {
+                console.log(`ProjectExporter: Pattern "${pattern}" (regex: ${regexPattern}) matched: ${filePath}`);
+            }
+            
+            return matches;
+        } catch (error) {
+            console.error(`ProjectExporter: Invalid regex pattern "${regexPattern}" from glob "${pattern}":`, error);
+            return false;
+        }
+    }
+
+    private generateOutputFileName(config: ExtensionConfig, workspacePath: string): string {
+        const workspaceName = path.basename(workspacePath).trim().replace(/\s+/g, '-');
+        let fileName = config.outputFileName.trim();
+        
+        fileName = fileName.replace(/\{workspaceName\}/g, workspaceName);
+        
+        fileName = fileName.replace(/\s+/g, '-');
+        
+        fileName = fileName.replace(/[<>:"/\\|?*]/g, '-');
+        
+        fileName = fileName.replace(/\.txt$/i, '');
+        
+        fileName = `${fileName}.txt`;
+        
+        console.log(`ProjectExporter: Generated output filename: ${fileName}`);
+        return fileName;
     }
 
     private async buildProjectStructure(dirPath: string, config: ExtensionConfig): Promise<ProjectStructure[]> {
@@ -246,9 +631,7 @@ class ProjectExporter {
         const config = this.getConfig();
 
         if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length === 0) {
-            const errorMsg = this.getLocalizedString('export.noWorkspace', 'No workspace folder is open');
-            console.error('ProjectExporter: No workspace folder found');
-            vscode.window.showErrorMessage(errorMsg);
+            this.notificationManager.showLocalizedError('export.noWorkspace');
             this.outputChannel.appendLine('ERROR: No workspace folder found');
             return;
         }
@@ -260,15 +643,22 @@ class ProjectExporter {
         console.log(`ProjectExporter: Starting export for project: ${projectName}`);
         console.log(`ProjectExporter: Workspace path: ${workspacePath}`);
         
-        const startingMsg = this.getLocalizedString('export.starting', 'Starting project export...');
-        this.outputChannel.appendLine(startingMsg);
-        vscode.window.showInformationMessage(startingMsg);
+        this.outputChannel.appendLine('Starting project export...');
+        this.notificationManager.showLocalizedInfo('export.starting', NotificationType.EXPORT_STARTING);
 
         try {
+            // Clean existing output file
+            console.log('ProjectExporter: Cleaning existing output file...');
+            await this.deleteExistingOutputFile(workspacePath);
+
             // Build project structure
             console.log('ProjectExporter: Building project structure...');
             const structure = await this.buildProjectStructure(workspacePath, config);
             console.log(`ProjectExporter: Structure built with ${this.countFiles(structure)} files`);
+
+            // Dynamically get extension info
+            const extensionInfo = this.getExtensionInfo();
+            console.log(`ProjectExporter: Using extension version: ${extensionInfo.version}`);
 
             // Generate current date/time with timezone
             const now = new Date();
@@ -284,8 +674,8 @@ class ProjectExporter {
             content += `Project Name: ${projectName}\n`;
             content += `Generated on: ${now.toISOString().replace('T', ' ').substring(0, 19)} (${timezone} / ${gmtString})\n`;
             content += `Total Files Processed: ${this.countFiles(structure)}\n`;
-            content += `Export Tool: Easy Whole Project to Single Text File for LLMs v1.0.2\n`;
-            content += `Author: Jota / José Guilherme Pandolfi\n\n`;
+            content += `Export Tool: ${extensionInfo.displayName} v${extensionInfo.version}\n`;
+            content += `Tool Author: Jota / José Guilherme Pandolfi\n\n`;
 
             content += `${'='.repeat(80)}\n`;
             content += `PROJECT STRUCTURE\n`;
@@ -298,24 +688,32 @@ class ProjectExporter {
             content += await this.generateFileContent(structure, config);
 
             // Save file
-            const fileName = `${projectName}-ESTRUTURA-E-ARQUIVOS-DO-PROJETO.txt`;
+            const fileName = this.generateOutputFileName(config, workspacePath);
             const filePath = path.join(workspacePath, fileName);
             
             console.log(`ProjectExporter: Saving file to: ${filePath}`);
             await fs.promises.writeFile(filePath, content, 'utf-8');
             console.log('ProjectExporter: File saved successfully');
 
-            const message = this.getLocalizedString('export.success', 'Project exported successfully to: {0}').replace('{0}', fileName);
-            vscode.window.showInformationMessage(message);
-            this.outputChannel.appendLine(message);
+            // Success message
+            this.notificationManager.showLocalizedSuccess('export.success', fileName);
+            this.outputChannel.appendLine(`Project exported successfully to: ${fileName}`);
             console.log(`ProjectExporter: Export completed successfully: ${fileName}`);
 
         } catch (error) {
-            const errorMessage = this.getLocalizedString('export.error', 'Error exporting project: {0}').replace('{0}', String(error));
-            console.error('ProjectExporter: Export failed:', error);
-            vscode.window.showErrorMessage(errorMessage);
-            this.outputChannel.appendLine(`ERROR: ${errorMessage}`);
+            this.notificationManager.showLocalizedError('export.error', String(error));
+            this.outputChannel.appendLine(`ERROR: Export failed - ${error}`);
         }
+    }
+
+    public getOutputFileNamePattern(): string {
+        const config = this.getConfig();
+        return config.outputFileName;
+    }
+
+    public getCurrentOutputFileName(workspacePath: string): string {
+        const config = this.getConfig();
+        return this.generateOutputFileName(config, workspacePath);
     }
 
     private countFiles(items: ProjectStructure[]): number {
@@ -336,12 +734,10 @@ class ProjectExporter {
         const currentValue = config.get('enableOnSave', true);
         config.update('enableOnSave', !currentValue, vscode.ConfigurationTarget.Global);
 
-        const message = !currentValue 
-            ? this.getLocalizedString('export.autoEnabled', 'Auto-export enabled')
-            : this.getLocalizedString('export.autoDisabled', 'Auto-export disabled');
-
-        vscode.window.showInformationMessage(message);
-        this.outputChannel.appendLine(message);
+        const messageKey = !currentValue ? 'export.autoEnabled' : 'export.autoDisabled';
+        
+        this.notificationManager.showLocalizedInfo(messageKey, NotificationType.INFO);
+        this.outputChannel.appendLine(`Auto-export toggled to: ${!currentValue}`);
         console.log(`ProjectExporter: Auto-export toggled to: ${!currentValue}`);
     }
 
@@ -378,39 +774,104 @@ class ProjectExporter {
     }
 }
 
+class CommandManager {
+    private context: vscode.ExtensionContext;
+    private exporter: ProjectExporter;
+    private localizationManager: LocalizationManager;
+    private notificationManager: NotificationManager;
+    private registeredCommands: vscode.Disposable[] = [];
+
+    constructor(context: vscode.ExtensionContext, exporter: ProjectExporter) {
+        this.context = context;
+        this.exporter = exporter;
+        this.localizationManager = LocalizationManager.getInstance();
+        this.notificationManager = new NotificationManager(this.localizationManager);
+    }
+
+    public updateNotificationLevel(level: string) {
+        this.notificationManager.setNotificationLevel(level);
+    }
+
+    public registerCommands() {
+        this.disposeCommands();
+
+        console.log('CommandManager: Registering commands with current language');
+
+        const exportCommand = vscode.commands.registerCommand('easyProjectExport.exportProject', () => {
+            console.log('Easy Project Export: Export command triggered');
+            const commandTitle = this.localizationManager.getString('command.exportProject.title');
+            
+            this.notificationManager.showLocalizedInfo('command.executed', NotificationType.COMMAND_EXECUTED, commandTitle);
+            this.exporter.exportProject();
+        });
+
+        const toggleCommand = vscode.commands.registerCommand('easyProjectExport.toggleAutoExport', () => {
+            console.log('Easy Project Export: Toggle command triggered');
+            this.exporter.toggleAutoExport();
+        });
+
+        this.registeredCommands = [exportCommand, toggleCommand];
+        this.context.subscriptions.push(...this.registeredCommands);
+
+        console.log('CommandManager: Commands registered successfully');
+    }
+
+    private disposeCommands() {
+        this.registeredCommands.forEach(disposable => disposable.dispose());
+        this.registeredCommands = [];
+    }
+
+    public updateCommands() {
+        console.log('CommandManager: Updating commands for language change');
+        this.registerCommands();
+    }
+}
+
 export function activate(context: vscode.ExtensionContext) {
     console.log('Easy Project Export: Extension activation starting...');
     
-    // Check if auto-save is enabled and warn user
-    const autoSave = vscode.workspace.getConfiguration('files').get('autoSave');
-    if (autoSave !== 'off') {
-        console.log(`Easy Project Export: Auto-save is enabled (${autoSave})`);
-        vscode.window.showWarningMessage(
-            'Auto-save is enabled. This may interfere with project export triggers. Consider disabling it in File > Preferences > Settings > "auto save".'
-        );
-    }
-
     const exporter = new ProjectExporter(context);
+    const commandManager = new CommandManager(context, exporter);
+    const localizationManager = LocalizationManager.getInstance();
+    const notificationManager = new NotificationManager(localizationManager);
 
-    // Register commands with detailed logging
-    console.log('Easy Project Export: Registering commands...');
-    
-    const exportCommand = vscode.commands.registerCommand('easyProjectExport.exportProject', () => {
-        console.log('Easy Project Export: Export command triggered via command palette/menu');
-        vscode.window.showInformationMessage('Export command executed!');
-        exporter.exportProject();
+    commandManager.registerCommands();
+
+    const configChangeListener = vscode.workspace.onDidChangeConfiguration((event) => {
+        if (event.affectsConfiguration('easyProjectExport.language') || 
+            event.affectsConfiguration('easyProjectExport.notificationLevel')) {
+            
+            console.log('Configuration changed');
+            
+            const newConfig = vscode.workspace.getConfiguration('easyProjectExport');
+            const newLanguage = newConfig.get('language', 'en');
+            const newNotificationLevel = newConfig.get('notificationLevel', 'minimal');
+            
+            console.log(`Updating language to: ${newLanguage}`);
+            console.log(`Updating notification level to: ${newNotificationLevel}`);
+            
+            localizationManager.setLanguage(newLanguage);
+            notificationManager.setNotificationLevel(newNotificationLevel);
+            commandManager.updateNotificationLevel(newNotificationLevel);
+            
+            exporter.updateConfig({
+                language: newLanguage,
+                enableOnSave: newConfig.get('enableOnSave', true),
+                includeHiddenFiles: newConfig.get('includeHiddenFiles', false),
+                maxFileSize: newConfig.get('maxFileSize', 1048576),
+                excludePatterns: newConfig.get('excludePatterns', []),
+                outputFileName: newConfig.get('outputFileName', '{workspaceName}-output'),
+                notificationLevel: newNotificationLevel
+            });
+            
+            commandManager.updateCommands();
+            
+            if (event.affectsConfiguration('easyProjectExport.language')) {
+                notificationManager.showLocalizedInfo('language.changed', NotificationType.LANGUAGE_CHANGED);
+            }
+        }
     });
 
-    const toggleCommand = vscode.commands.registerCommand('easyProjectExport.toggleAutoExport', () => {
-        console.log('Easy Project Export: Toggle auto-export command triggered');
-        exporter.toggleAutoExport();
-    });
-
-    console.log('Easy Project Export: Commands registered successfully');
-
-    // Register event listeners with enhanced tracking
-    console.log('Easy Project Export: Registering event listeners...');
-    
     const changeListener = vscode.workspace.onDidChangeTextDocument((event) => {
         if (event.contentChanges.length > 0) {
             exporter.onFileChanged(event.document);
@@ -421,24 +882,14 @@ export function activate(context: vscode.ExtensionContext) {
         exporter.onFileSaved(document);
     });
 
-    console.log('Easy Project Export: Event listeners registered successfully');
+    context.subscriptions.push(
+        configChangeListener,
+        changeListener, 
+        saveListener
+    );
 
-    context.subscriptions.push(exportCommand, toggleCommand, changeListener, saveListener);
-
-    // Confirm activation
-    const activationMessage = 'Easy Project Export: Extension activated successfully! Use Ctrl+Shift+P > "Export Project" or right-click on folder.';
-    vscode.window.showInformationMessage(activationMessage);
+    notificationManager.showLocalizedInfo('activation.success', NotificationType.ACTIVATION);
     console.log('Easy Project Export: Extension activation completed successfully');
-
-    // Log current workspace info
-    if (vscode.workspace.workspaceFolders) {
-        console.log(`Easy Project Export: Found ${vscode.workspace.workspaceFolders.length} workspace folder(s):`);
-        vscode.workspace.workspaceFolders.forEach((folder, index) => {
-            console.log(`  ${index + 1}. ${folder.name} (${folder.uri.fsPath})`);
-        });
-    } else {
-        console.log('Easy Project Export: No workspace folders found');
-    }
 }
 
 export function deactivate() {

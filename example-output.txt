@@ -6,7 +6,7 @@ Project Name: easy-whole-project-to-single-text-file-for-llms
 Generated on: 2024-06-06 23:22:15 (America/Sao_Paulo / GMT-03:00)
 Total Files Processed: 16
 Export Tool: Easy Whole Project to Single Text File for LLMs v1.0.0
-Author: Jota / José Guilherme Pandolfi
+Tool Author: Jota / José Guilherme Pandolfi
 
 ================================================================================
 PROJECT STRUCTURE

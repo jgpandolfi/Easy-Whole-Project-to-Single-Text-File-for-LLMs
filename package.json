@@ -44,7 +44,7 @@
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
-      "title": "Easy Whole Project to Single Text File for LLMs",
+      "title": "%config.title%",
       "properties": {
         "easyProjectExport.language": {
           "type": "string",
@@ -53,22 +53,22 @@
             "pt-BR"
           ],
           "default": "en",
-          "description": "Language for the extension interface / Idioma para a interface da extensão"
+          "description": "%config.language.description%"
         },
         "easyProjectExport.enableOnSave": {
           "type": "boolean",
           "default": true,
-          "description": "Enable automatic export on file save / Habilitar exportação automática ao salvar arquivo"
+          "description": "%config.enableOnSave.description%"
         },
         "easyProjectExport.includeHiddenFiles": {
           "type": "boolean",
           "default": false,
-          "description": "Include hidden files and directories / Incluir arquivos e diretórios ocultos"
+          "description": "%config.includeHiddenFiles.description%"
         },
         "easyProjectExport.maxFileSize": {
           "type": "number",
           "default": 1048576,
-          "description": "Maximum file size in bytes to include (1MB default) / Tamanho máximo do arquivo em bytes para incluir (1MB padrão)"
+          "description": "%config.maxFileSize.description%"
         },
         "easyProjectExport.excludePatterns": {
           "type": "array",
@@ -85,18 +85,33 @@
             ".vscode/**",
             "*.log"
           ],
-          "description": "Patterns to exclude from export / Padrões para excluir da exportação"
+          "description": "%config.excludePatterns.description%"
+        },
+        "easyProjectExport.outputFileName": {
+          "type": "string",
+          "default": "{workspaceName}-output",
+          "description": "%config.outputFileName.description%"
+        },
+        "easyProjectExport.notificationLevel": {
+          "type": "string",
+          "enum": [
+            "silent",
+            "minimal",
+            "all"
+          ],
+          "default": "minimal",
+          "description": "%config.notificationLevel.description%"
         }
       }
     },
     "commands": [
       {
         "command": "easyProjectExport.exportProject",
-        "title": "Export Project to Text File / Exportar Projeto para Arquivo de Texto"
+        "title": "%command.exportProject.title%"
       },
       {
         "command": "easyProjectExport.toggleAutoExport",
-        "title": "Toggle Auto Export / Alternar Exportação Automática"
+        "title": "%command.toggleAutoExport.title%"
       }
     ],
     "menus": {

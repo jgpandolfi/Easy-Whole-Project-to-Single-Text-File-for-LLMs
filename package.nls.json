@@ -1,11 +1,12 @@
 {
-  "extension.displayName": "Easy Whole Project to Single Text File for LLMs",
-  "extension.description": "Automatically generates a comprehensive text file containing your entire project structure and code content whenever you save a file. Perfect for sharing complete project context with AI tools and LLMs.",
+  "command.exportProject.title": "Export Project to Text File",
+  "command.toggleAutoExport.title": "Toggle Auto Export",
+  "config.title": "Easy Whole Project to Single Text File for LLMs",
   "config.language.description": "Language for the extension interface",
   "config.enableOnSave.description": "Enable automatic export on file save",
   "config.includeHiddenFiles.description": "Include hidden files and directories",
   "config.maxFileSize.description": "Maximum file size in bytes to include (1MB default)",
   "config.excludePatterns.description": "Patterns to exclude from export",
-  "command.exportProject.title": "Export Project to Text File",
-  "command.toggleAutoExport.title": "Toggle Auto Export"
+  "config.outputFileName.description": "Custom output file name pattern. Use {workspaceName} for workspace name. Spaces will be replaced with hyphens",
+  "config.notificationLevel.description": "Control the level of notifications shown by the extension"
 }
