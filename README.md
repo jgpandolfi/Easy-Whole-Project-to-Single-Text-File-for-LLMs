@@ -1,309 +1,229 @@
 # Easy Whole Project to Single Text File for LLMs
 
-[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/jgpandolfi.easy-whole-project-to-single-text-file-for-llms)](https://marketplace.visualstudio.com/items?itemName=jgpandolfi.easy-whole-project-to-single-text-file-for-llms)
-[![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/jgpandolfi.easy-whole-project-to-single-text-file-for-llms)](https://marketplace.visualstudio.com/items?itemName=jgpandolfi.easy-whole-project-to-single-text-file-for-llms)
-[![GitHub](https://img.shields.io/github/license/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs)](https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs/blob/main/LICENSE)
+[![Version](https://img.shields.io/visual-studio-marketplace/v/jgpandolfi.easy-whole-project-to-single-text-file-for-llms)](https://marketplace.visualstudio.com/items?itemName=jgpandolfi.easy-whole-project-to-single-text-file-for-llms)
+[![Downloads](https://img.shields.io/visual-studio-marketplace/d/jgpandolfi.easy-whole-project-to-single-text-file-for-llms)](https://marketplace.visualstudio.com/items?itemName=jgpandolfi.easy-whole-project-to-single-text-file-for-llms)
+[![Rating](https://img.shields.io/visual-studio-marketplace/r/jgpandolfi.easy-whole-project-to-single-text-file-for-llms)](https://marketplace.visualstudio.com/items?itemName=jgpandolfi.easy-whole-project-to-single-text-file-for-llms)
+[![License](https://img.shields.io/github/license/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs)](https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs/blob/main/LICENSE)
 
-## English
+Transform your entire project into a single, well-structured text file perfect for sharing with AI tools and Large Language Models (LLMs) like ChatGPT, Claude, Gemini, and others.
 
-### Overview
+## ✨ Features
 
-**Easy Whole Project to Single Text File for LLMs** is a powerful Visual Studio Code extension that automatically generates a comprehensive text file containing your entire project structure and code content. This extension is specifically designed to help developers easily share their complete project context with AI tools and Large Language Models (LLMs) like GPT, Claude, Gemini, and others.
+### 🚀 **Automatic Export on Save**
+- Triggers automatically when you save any file (Ctrl+S)
+- Instantly generates comprehensive project documentation
+- Configurable auto-export settings
 
-### Features
+### 📁 **Complete Project Structure**
+- Visual tree representation of your project hierarchy
+- File sizes and counts for easy reference
+- Emoji icons for better readability
 
-- ✅ **Automatic Export on Save**: Generates the text file every time you save any file in your project
-- 📁 **Complete Project Structure**: Creates a visual tree representation of your project directory
-- 📄 **Full Code Content**: Includes the complete source code of all text-based files
-- 🌍 **Multi-language Support**: Available in English and Portuguese (Brazil)
-- ⚙️ **Highly Configurable**: Customize file patterns, size limits, and exclusion rules
-- 🚫 **Smart Exclusions**: Automatically excludes common non-essential files (node_modules, .git, etc.)
-- 📊 **Binary File Listing**: Lists binary files that couldn't be included as text
-- 🔧 **Manual Export Option**: Export your project on-demand via command palette or context menu
+### 💻 **Extensive File Type Support**
+Supports 50+ file extensions including:
+- **Web**: `.html`, `.css`, `.js`, `.jsx`, `.ts`, `.tsx`, `.vue`, `.svelte`
+- **Backend**: `.php`, `.py`, `.cs`, `.java`, `.cpp`, `.c`, `.h`, `.go`, `.rs`
+- **Config**: `.json`, `.xml`, `.yaml`, `.yml`, `.ini`, `.conf`, `.env`
+- **Documentation**: `.md`, `.txt`, `.log`
+- **And many more!**
 
-### How It Works
+### 🎯 **Smart Content Organization**
+- Full source code content for supported files
+- Binary file detection and listing
+- Anti-recursion protection to prevent output file inclusion
+- Automatic cleanup of previous exports
 
-1. **Automatic Trigger**: Every time you save a file (Ctrl+S), the extension automatically generates the export
-2. **File Analysis**: Scans your entire project directory structure
-3. **Content Generation**: Creates a single text file with:
-   - Project metadata (name, generation date, timezone)
-   - Complete directory tree structure
-   - Full source code content for all supported file types
-   - List of binary/excluded files
-4. **Save Location**: Saves the file in your project root with the format: `<PROJECT-NAME>-ESTRUTURA-E-ARQUIVOS-DO-PROJETO.txt`
+### 🌍 **Multi-Language Support**
+- **English** and **Portuguese (Brazil)** interfaces
+- Dynamic language switching without restart
+- Localized notifications and messages
 
-### Supported File Extensions
+### ⚙️ **Advanced Configuration**
+- **Custom output filename patterns** with `{workspaceName}` placeholder
+- **Flexible exclusion patterns** for files and directories
+- **File size limits** to prevent memory issues
+- **Hidden file inclusion** options
+- **Notification levels**: Silent, Minimal, or All messages
 
-The extension supports over 50 text-based file formats including:
+### 🔧 **Smart Exclusions**
+Default exclusions include:
+- `node_modules/**`
+- `.git/**`
+- `dist/**`, `build/**`
+- `*.min.js`, `*.map`
+- `.vscode/**`
+- `*.log`
 
-```
-.html, .htm, .css, .js, .jsx, .ts, .tsx, .json, .xml, .txt, .md, .yml, .yaml,
-.php, .py, .cs, .java, .cpp, .c, .h, .sql, .ps1, .bat, .cmd, .sh, .vue,
-.svelte, .scss, .sass, .less, .ini, .conf, .config, .log, .gitignore, .env,
-.dockerfile, .go, .rs, .rb, .swift, .kt, .scala, .r, .lua, .vb, .asm, and more...
-```
+## 📦 Installation
 
-### Installation
-
-1. Open Visual Studio Code
+### From VS Code Marketplace
+1. Open VS Code
 2. Go to Extensions (Ctrl+Shift+X)
 3. Search for "Easy Whole Project to Single Text File for LLMs"
-4. Click Install
-5. Reload VS Code if necessary
+4. Click "Install"
 
-### Configuration
+### From Command Line
+```
+code --install-extension jgpandolfi.easy-whole-project-to-single-text-file-for-llms
+```
 
-Access the extension settings via `File > Preferences > Settings` and search for "Easy Project Export":
+
+## 🚀 Quick Start
+
+1. **Open your project** in VS Code
+2. **Save any file** (Ctrl+S) or use the manual export
+3. **Find the generated file** in your project root (e.g., `my-project-output.txt`)
+4. **Share with AI tools** for comprehensive project analysis
+
+## 💡 Usage
+
+### Automatic Export
+The extension automatically generates a text file whenever you save a file in your project (if auto-export is enabled).
+
+### Manual Export
+- **Command Palette**: Ctrl+Shift+P → "Export Project to Text File"
+- **Context Menu**: Right-click on any folder → "Export Project to Text File"
+
+### Toggle Auto-Export
+- **Command Palette**: Ctrl+Shift+P → "Toggle Auto Export"
+
+## ⚙️ Configuration
+
+Access settings via `File > Preferences > Settings` and search for "Easy Project Export":
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| `easyProjectExport.language` | Interface language (en/pt-BR) | `en` |
-| `easyProjectExport.enableOnSave` | Enable auto-export on save | `true` |
-| `easyProjectExport.includeHiddenFiles` | Include hidden files/folders | `false` |
-| `easyProjectExport.maxFileSize` | Max file size in bytes | `1048576` (1MB) |
-| `easyProjectExport.excludePatterns` | Patterns to exclude | `["node_modules/**", ".git/**", ...]` |
+| **Language** | Interface language (en/pt-BR) | `en` |
+| **Enable On Save** | Auto-export when saving files | `true` |
+| **Output File Name** | Custom filename pattern | `{workspaceName}-output` |
+| **Notification Level** | Control notification frequency | `minimal` |
+| **Include Hidden Files** | Include dot files and folders | `false` |
+| **Max File Size** | Maximum file size to include (bytes) | `1048576` (1MB) |
+| **Exclude Patterns** | Glob patterns to exclude | See defaults above |
 
-### Commands
+### Output Filename Customization
+Use the `{workspaceName}` placeholder in your custom filename:
+- `{workspaceName}-export` → `my-project-export.txt`
+- `project-{workspaceName}-full` → `project-my-project-full.txt`
+- `my-custom-name` → `my-custom-name.txt`
 
-- `Easy Project Export: Export Project to Text File` - Manually export your project
-- `Easy Project Export: Toggle Auto Export` - Enable/disable automatic export on save
+### Notification Levels
+- **Silent**: No pop-up notifications
+- **Minimal**: Only success and error messages (default)
+- **All**: Complete notification experience
 
-### Usage Examples
+## 📄 Output Format
 
-#### For AI Development
-Perfect for sharing your entire codebase context with AI assistants:
-- Copy the generated text file content
-- Paste into ChatGPT, Claude, or other LLMs
-- Get comprehensive code review, debugging help, or feature suggestions
-
-#### For Code Documentation
-- Generate instant project documentation
-- Share complete project structure with team members
-- Create snapshots of project state for version control
-
-#### For Learning and Teaching
-- Share complete projects for educational purposes
-- Provide full context for code reviews
-- Create comprehensive examples for tutorials
-
-### Example Output Structure
-
+The generated file includes:
 ```
 ================================================================================
 PROJECT EXPORT FOR LLMs
-================================================================================
 
 Project Name: my-awesome-project
-Generated on: 2024-06-06 23:22:15 (America/Sao_Paulo / GMT-03:00)
-Total Files Processed: 42
-Export Tool: Easy Whole Project to Single Text File for LLMs v1.0.0
-Author: Jota / José Guilherme Pandolfi
-
+Generated on: 2025-06-09 00:41:03 (America/Sao_Paulo / GMT-03:00)
+Total Files Processed: 25
+Export Tool: Easy Whole Project to Single Text File for LLMs v1.0.3
+Tool Author: Jota / José Guilherme Pandolfi
 ================================================================================
 PROJECT STRUCTURE
-================================================================================
-├── 📁 src/
-│   ├── 📄 index.ts (2.5 KB)
-│   ├── 📁 components/
-│   │   └── 📄 Button.tsx (1.2 KB)
-│   └── 📁 utils/
-│       └── 📄 helpers.ts (856 B)
-├── 📄 package.json (1.8 KB)
-├── 📄 README.md (3.2 KB)
-└── 📄 tsconfig.json (542 B)
 
+├── 📁 src/
+│ ├── 📄 index.html (2.3 KB)
+│ ├── 📄 styles.css (1.8 KB)
+│ └── 📄 app.js (5.2 KB)
+├── 📁 docs/
+│ └── 📄 README.md (3.1 KB)
+└── 📄 package.json (1.2 KB)
 ================================================================================
 FILE CONTENTS
 ================================================================================
-
-================================================================================
-FILE: src/index.ts
-================================================================================
-// Your complete file content here...
+FILE: src/index.html
+<!DOCTYPE html> <html> ...
 ```
 
-### Troubleshooting
+## 🤖 Perfect for AI Tools
 
-**Extension not working after installation:**
-- Reload VS Code window (Ctrl+Shift+P > "Developer: Reload Window")
-- Check if you have a workspace folder open
+This extension is specifically designed for sharing projects with AI assistants:
 
-**Files not being included:**
-- Check the `excludePatterns` setting
-- Verify file size doesn't exceed `maxFileSize` limit
-- Ensure file extension is in the supported list
+- **ChatGPT:** Paste the entire file for comprehensive code analysis
+- **Claude:** Perfect for large project understanding with context
+- **GitHub Copilot:** Enhanced code suggestions with full project context
+- **Gemini:** Complete project overview for detailed assistance
+- **Custom LLMs:** Structured format for any AI model
 
-**Performance issues with large projects:**
-- Increase exclusion patterns for large directories
-- Reduce `maxFileSize` setting
-- Disable `includeHiddenFiles` if not needed
+## 🛡️ Security & Privacy
+- Local processing only - no data sent to external servers
+- Respects .gitignore patterns and custom exclusions
+- No sensitive file inclusion by default
+- Open source - review the code yourself
 
-### Contributing
+## 📊 Technical Details
 
-Contributions are welcome! Please visit our [GitHub repository](https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs) to:
-- Report bugs
-- Request features
-- Submit pull requests
+- Minimum VS Code Version: 1.74.0
+- Language: TypeScript
+- File Encoding: UTF-8 (supports international characters)
+- Platform Support: Windows, macOS, Linux
+- Memory Efficient: Streams large files, respects size limits
 
-### License
+## 🚨 Known Limitations
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- Very large projects may take longer to process
+- Binary files are listed but not included in content
+- Some file types may require manual pattern addition
+- Output file can become very large with extensive projects
 
-### Author
+## 🐛 Troubleshooting
 
-**Jota / José Guilherme Pandolfi**
-- GitHub: [@jgpandolfi](https://github.com/jgpandolfi)
-- Extension Repository: [Easy-Whole-Project-to-Single-Text-File-for-LLMs](https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs)
+### Extension not activating?
+
+- Check that VS Code version is 1.74.0 or higher
+- Reload VS Code window (Ctrl+Shift+P → "Developer: Reload Window")
+
+### No file generated?
+
+- Ensure auto-export is enabled in settings
+- Check that workspace folder is open
+- Verify file permissions in project directory
+
+### Large files excluded?
+
+- Increase maxFileSize setting if needed
+- Check exclude patterns for accidental matches
+
+### Performance issues?
+
+- Reduce maxFileSize setting
+- Add more patterns to excludePatterns
+- Use minimal notification level
+
+## 📝 Example Use Cases
+
+Code Review Preparation:
+```
+"Here's my entire React project structure and code. 
+Please review for best practices and potential improvements."
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [GitHub repository](https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs) for:
+
+- **Bug reports** and feature requests
+- **Pull requests** for improvements
+- **Documentation** enhancements
+- **Translation** contributions
+
+## 📄 License
+
+This project is licensed under the [MIT License](https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs/blob/main/LICENSE).
+
+## 📞 Support
+
+- **GitHub Issues**: [Report bugs or request features](https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs/issues)
+- **Author**: [Jota / José Guilherme Pandolfi](https://github.com/jgpandolfi)
+- **Marketplace**: [VS Code Extension Page](https://marketplace.visualstudio.com/items?itemName=jgpandolfi.easy-whole-project-to-single-text-file-for-llms)
+
 
 ---
 
-## Português (Brasil)
-
-### Visão Geral
-
-**Easy Whole Project to Single Text File for LLMs** é uma extensão poderosa do Visual Studio Code que gera automaticamente um arquivo de texto abrangente contendo toda a estrutura e conteúdo do código do seu projeto. Esta extensão foi especificamente projetada para ajudar desenvolvedores a compartilhar facilmente o contexto completo de seus projetos com ferramentas de IA e Grandes Modelos de Linguagem (LLMs) como GPT, Claude, Gemini e outros.
-
-### Funcionalidades
-
-- ✅ **Exportação Automática ao Salvar**: Gera o arquivo de texto toda vez que você salva qualquer arquivo no seu projeto
-- 📁 **Estrutura Completa do Projeto**: Cria uma representação visual em árvore do diretório do projeto
-- 📄 **Conteúdo Completo do Código**: Inclui o código-fonte completo de todos os arquivos baseados em texto
-- 🌍 **Suporte Multi-idioma**: Disponível em inglês e português (Brasil)
-- ⚙️ **Altamente Configurável**: Personalize padrões de arquivo, limites de tamanho e regras de exclusão
-- 🚫 **Exclusões Inteligentes**: Exclui automaticamente arquivos não essenciais comuns (node_modules, .git, etc.)
-- 📊 **Listagem de Arquivos Binários**: Lista arquivos binários que não puderam ser incluídos como texto
-- 🔧 **Opção de Exportação Manual**: Exporte seu projeto sob demanda via paleta de comandos ou menu de contexto
-
-### Como Funciona
-
-1. **Ativação Automática**: Toda vez que você salva um arquivo (Ctrl+S), a extensão gera automaticamente a exportação
-2. **Análise de Arquivos**: Escaneia toda a estrutura de diretórios do seu projeto
-3. **Geração de Conteúdo**: Cria um único arquivo de texto com:
-   - Metadados do projeto (nome, data de geração, fuso horário)
-   - Estrutura completa da árvore de diretórios
-   - Conteúdo completo do código-fonte para todos os tipos de arquivo suportados
-   - Lista de arquivos binários/excluídos
-4. **Local de Salvamento**: Salva o arquivo na raiz do projeto com o formato: `<NOME-DO-PROJETO>-ESTRUTURA-E-ARQUIVOS-DO-PROJETO.txt`
-
-### Extensões de Arquivo Suportadas
-
-A extensão suporta mais de 50 formatos de arquivo baseados em texto, incluindo:
-
-```
-.html, .htm, .css, .js, .jsx, .ts, .tsx, .json, .xml, .txt, .md, .yml, .yaml,
-.php, .py, .cs, .java, .cpp, .c, .h, .sql, .ps1, .bat, .cmd, .sh, .vue,
-.svelte, .scss, .sass, .less, .ini, .conf, .config, .log, .gitignore, .env,
-.dockerfile, .go, .rs, .rb, .swift, .kt, .scala, .r, .lua, .vb, .asm, e mais...
-```
-
-### Instalação
-
-1. Abra o Visual Studio Code
-2. Vá para Extensões (Ctrl+Shift+X)
-3. Pesquise por "Easy Whole Project to Single Text File for LLMs"
-4. Clique em Instalar
-5. Recarregue o VS Code se necessário
-
-### Configuração
-
-Acesse as configurações da extensão via `Arquivo > Preferências > Configurações` e pesquise por "Easy Project Export":
-
-| Configuração | Descrição | Padrão |
-|--------------|-----------|--------|
-| `easyProjectExport.language` | Idioma da interface (en/pt-BR) | `en` |
-| `easyProjectExport.enableOnSave` | Habilitar exportação automática ao salvar | `true` |
-| `easyProjectExport.includeHiddenFiles` | Incluir arquivos/pastas ocultos | `false` |
-| `easyProjectExport.maxFileSize` | Tamanho máx. do arquivo em bytes | `1048576` (1MB) |
-| `easyProjectExport.excludePatterns` | Padrões para excluir | `["node_modules/**", ".git/**", ...]` |
-
-### Comandos
-
-- `Easy Project Export: Export Project to Text File` - Exportar projeto manualmente
-- `Easy Project Export: Toggle Auto Export` - Habilitar/desabilitar exportação automática ao salvar
-
-### Exemplos de Uso
-
-#### Para Desenvolvimento com IA
-Perfeito para compartilhar o contexto completo da sua base de código com assistentes de IA:
-- Copie o conteúdo do arquivo de texto gerado
-- Cole no ChatGPT, Claude ou outros LLMs
-- Obtenha revisão abrangente de código, ajuda com debugging ou sugestões de funcionalidades
-
-#### Para Documentação de Código
-- Gere documentação instantânea do projeto
-- Compartilhe estrutura completa do projeto com membros da equipe
-- Crie snapshots do estado do projeto para controle de versão
-
-#### Para Aprendizado e Ensino
-- Compartilhe projetos completos para fins educacionais
-- Forneça contexto completo para revisões de código
-- Crie exemplos abrangentes para tutoriais
-
-### Exemplo de Estrutura de Saída
-
-```
-================================================================================
-PROJECT EXPORT FOR LLMs
-================================================================================
-
-Project Name: meu-projeto-incrivel
-Generated on: 2024-06-06 23:22:15 (America/Sao_Paulo / GMT-03:00)
-Total Files Processed: 42
-Export Tool: Easy Whole Project to Single Text File for LLMs v1.0.0
-Author: Jota / José Guilherme Pandolfi
-
-================================================================================
-PROJECT STRUCTURE
-================================================================================
-├── 📁 src/
-│   ├── 📄 index.ts (2.5 KB)
-│   ├── 📁 components/
-│   │   └── 📄 Button.tsx (1.2 KB)
-│   └── 📁 utils/
-│       └── 📄 helpers.ts (856 B)
-├── 📄 package.json (1.8 KB)
-├── 📄 README.md (3.2 KB)
-└── 📄 tsconfig.json (542 B)
-
-================================================================================
-FILE CONTENTS
-================================================================================
-
-================================================================================
-FILE: src/index.ts
-================================================================================
-// Seu conteúdo completo do arquivo aqui...
-```
-
-### Solução de Problemas
-
-**Extensão não funciona após instalação:**
-- Recarregue a janela do VS Code (Ctrl+Shift+P > "Developer: Reload Window")
-- Verifique se você tem uma pasta de workspace aberta
-
-**Arquivos não estão sendo incluídos:**
-- Verifique a configuração `excludePatterns`
-- Verifique se o tamanho do arquivo não excede o limite `maxFileSize`
-- Certifique-se de que a extensão do arquivo está na lista suportada
-
-**Problemas de performance com projetos grandes:**
-- Aumente os padrões de exclusão para diretórios grandes
-- Reduza a configuração `maxFileSize`
-- Desabilite `includeHiddenFiles` se não necessário
-
-### Contribuindo
-
-Contribuições são bem-vindas! Visite nosso [repositório no GitHub](https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs) para:
-- Reportar bugs
-- Solicitar funcionalidades
-- Enviar pull requests
-
-### Licença
-
-Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
-
-### Autor
-
-**Jota / José Guilherme Pandolfi**
-- GitHub: [@jgpandolfi](https://github.com/jgpandolfi)
-- Repositório da Extensão: [Easy-Whole-Project-to-Single-Text-File-for-LLMs](https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs)
+⭐ **Found this extension helpful?** Please consider rating it on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=jgpandolfi.easy-whole-project-to-single-text-file-for-llms)!
