@@ -5,6 +5,65 @@ All notable changes to the "Easy Whole Project to Single Text File for LLMs" ext
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-06-11
+
+### Added
+- **Markdown Output Support**: Complete implementation of markdown (.md) file generation
+  - New setting: `easyProjectExport.outputFormat` with options: `both`, `txt`, `md`
+  - **Both**: Generates both .txt and .md files simultaneously
+  - **Text Only**: Generates only .txt files (previous behavior)
+  - **Markdown Only**: Generates only .md files optimized for AI/LLM consumption
+  - Real-time format switching without extension restart
+
+- **Enhanced File Information System**: Comprehensive metadata for each processed file
+  - **Cryptographic Hashes**: MD5 and SHA256 checksums for file integrity verification
+  - **Timestamp Information**: File creation and modification dates with timezone support
+  - **Encoding Detection**: Automatic detection of file encoding (ASCII, UTF-8, UTF-16, etc.)
+  - **Location Context**: Full path information and relative directory structure
+  - **File Relationships**: Clear indication of file position within project hierarchy
+
+- **Interactive Navigation for Markdown**: Advanced navigation features for .md output
+  - **Table of Contents**: Auto-generated navigable index of all project files
+  - **Anchor Links**: Clickable links that jump directly to specific files
+  - **Hierarchical Organization**: Files grouped by directory structure
+  - **Quick Access**: Direct navigation to any file within the generated document
+
+- **Optimized Markdown Structure for AI/LLMs**: Enhanced formatting for AI consumption
+  - **Structured Headers**: Consistent H1-H3 hierarchy for better parsing
+  - **Code Block Improvements**: Language-specific syntax highlighting for 30+ languages
+  - **Metadata Tables**: Organized project statistics and configuration data
+  - **Content Separation**: Clear visual separators between file sections
+  - **Emoji Icons**: Descriptive icons for improved readability (📁, 📄, 💻, etc.)
+
+- **Advanced Anti-Recursion Protection**: Expanded protection for multiple formats
+  - **Multi-format Detection**: Prevents inclusion of both .txt and .md output files
+  - **Pattern Recognition**: Enhanced detection of likely output files from extension
+  - **Proactive Cleanup**: Automatic removal of previous output files in all formats
+  - **Cross-format Protection**: Works seamlessly when switching between output formats
+
+### Enhanced
+- **Text File Output Improvements**: Upgraded .txt format to match markdown richness
+  - **Detailed File Information**: Added MD5, SHA256, timestamps, and encoding to .txt output
+  - **Enhanced Project Statistics**: Comprehensive statistics section with file type distribution
+  - **Configuration Documentation**: Export settings clearly documented in output files
+  - **Improved Formatting**: Better visual separation and organization of content
+
+### Technical Details
+- **Development Language Support**: Extended development language mapping for syntax highlighting
+  - Added support for 30+ programming languages in markdown code blocks
+  - Improved language detection based on file extensions
+  - Fallback to 'text' for unknown file types
+
+- **File Processing**: Enhanced file analysis capabilities
+  - **Encoding Detection Algorithm**: Heuristic-based encoding identification
+  - **Hash Performance**: Optimized cryptographic hash calculation
+  - **Metadata Extraction**: Comprehensive file system metadata collection
+
+- **Cross-platform Compatibility**: Improved support across operating systems
+  - **Path Normalization**: Consistent path handling across platforms
+  - **Timezone Handling**: Proper timezone formatting for all systems
+  - **File Permissions**: Better handling of restricted files and directories
+
 ## [1.0.3] - 2025-06-09
 
 ### Added
@@ -124,11 +183,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned Features
-- Workspace-specific configuration profiles
-- Advanced filtering options for file types
 - Export templates for different AI/LLM platforms
 - Integration with popular AI services
+- Advanced filtering options for file types
 - Project comparison and diff capabilities
+- Workspace-specific configuration profiles
 - Automated project documentation generation
 
 ---

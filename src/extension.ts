@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { l10n } from 'vscode';
 
 interface ProjectStructure {
@@ -19,7 +20,14 @@ interface ExtensionConfig {
     maxFileSize: number;
     excludePatterns: string[];
     outputFileName: string;
+    outputFormat: string;
     notificationLevel: string;
+}
+
+enum OutputFormat {
+    BOTH = 'both',
+    TXT = 'txt',
+    MD = 'md'
 }
 
 enum NotificationLevel {
@@ -67,6 +75,10 @@ class LocalizationManager {
             'export.success': {
                 'en': 'Project exported successfully to: {0}',
                 'pt-BR': 'Projeto exportado com sucesso para: {0}'
+            },
+            'export.success.multiple': {
+                'en': 'Project exported successfully to: {0} and {1}',
+                'pt-BR': 'Projeto exportado com sucesso para: {0} e {1}'
             },
             'export.error': {
                 'en': 'Error exporting project: {0}',
@@ -175,7 +187,6 @@ class NotificationManager {
         if (this.shouldShowNotification(type)) {
             vscode.window.showInformationMessage(message);
         }
-        // Sempre logar no output channel
         console.log(`INFO: ${message}`);
     }
 
@@ -251,6 +262,130 @@ class ProjectExporter {
         '.lock', '.cfg', '.cnf', '.inf', '.reg', '.manifest'
     ];
 
+    private readonly languageMap: { [key: string]: string } = {
+        '.js': 'javascript',
+        '.jsx': 'jsx',
+        '.ts': 'typescript',
+        '.tsx': 'typescript',
+        '.py': 'python',
+        '.java': 'java',
+        '.cpp': 'cpp',
+        '.c': 'c',
+        '.cs': 'csharp',
+        '.php': 'php',
+        '.rb': 'ruby',
+        '.go': 'go',
+        '.rs': 'rust',
+        '.swift': 'swift',
+        '.kt': 'kotlin',
+        '.scala': 'scala',
+        '.html': 'html',
+        '.css': 'css',
+        '.scss': 'scss',
+        '.sass': 'sass',
+        '.less': 'less',
+        '.xml': 'xml',
+        '.json': 'json',
+        '.yaml': 'yaml',
+        '.yml': 'yaml',
+        '.sql': 'sql',
+        '.sh': 'bash',
+        '.ps1': 'powershell',
+        '.bat': 'batch',
+        '.cmd': 'batch',
+        '.dockerfile': 'dockerfile',
+        '.vue': 'vue',
+        '.svelte': 'svelte'
+    };
+
+    private calculateMD5(filePath: string): string {
+        try {
+            const fileBuffer = fs.readFileSync(filePath);
+            const hash = crypto.createHash('md5');
+            hash.update(fileBuffer);
+            return hash.digest('hex');
+        } catch (error) {
+            console.error(`Error calculating MD5 for ${filePath}:`, error);
+            return 'error';
+        }
+    }
+
+    private calculateSHA256(filePath: string): string {
+        try {
+            const fileBuffer = fs.readFileSync(filePath);
+            const hash = crypto.createHash('sha256');
+            hash.update(fileBuffer);
+            return hash.digest('hex');
+        } catch (error) {
+            console.error(`Error calculating SHA256 for ${filePath}:`, error);
+            return 'error';
+        }
+    }
+
+    private detectEncoding(filePath: string): string {
+        try {
+            const buffer = fs.readFileSync(filePath);
+            
+            if (buffer.length >= 3 && buffer[0] === 0xEF && buffer[1] === 0xBB && buffer[2] === 0xBF) {
+                return 'UTF-8 (with BOM)';
+            }
+            
+            if (buffer.length >= 2) {
+                if ((buffer[0] === 0xFF && buffer[1] === 0xFE) || (buffer[0] === 0xFE && buffer[1] === 0xFF)) {
+                    return 'UTF-16';
+                }
+            }
+            
+            let hasNonAscii = false;
+            for (let i = 0; i < Math.min(buffer.length, 1024); i++) {
+                if (buffer[i] > 127) {
+                    hasNonAscii = true;
+                    break;
+                }
+            }
+            
+            if (!hasNonAscii) {
+                return 'ASCII';
+            }
+            
+            try {
+                const decoded = buffer.toString('utf8');
+                return 'UTF-8';
+            } catch {
+                return 'Binary/Unknown';
+            }
+        } catch (error) {
+            console.error(`Error detecting encoding for ${filePath}:`, error);
+            return 'Unknown';
+        }
+    }
+
+    private formatTimestampWithTimezone(timestamp: Date): string {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const gmtOffset = timestamp.getTimezoneOffset();
+        const gmtString = `GMT${gmtOffset <= 0 ? '+' : '-'}${Math.abs(Math.floor(gmtOffset / 60)).toString().padStart(2, '0')}:${Math.abs(gmtOffset % 60).toString().padStart(2, '0')}`;
+        
+        return `${timestamp.toISOString().replace('T', ' ').substring(0, 19)} (${timezone} / ${gmtString})`;
+    }
+
+    private generateTableOfContents(structure: ProjectStructure[]): string {
+        let toc = `## 📑 Table of Contents\n\n`;
+        
+        const fileLinks = this.generateFileLinks(structure);
+        if (fileLinks.length > 0) {
+            toc += `**Project Files:**\n\n`;
+            fileLinks.forEach(link => {
+                toc += `- [📄 ${link.name}](#${link.anchor})\n`;
+            });
+        } else {
+            toc += `*No text files found to display.*\n`;
+        }
+        
+        toc += `\n---\n\n`;
+        
+        return toc;
+    }
+
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
         this.outputChannel = vscode.window.createOutputChannel('Easy Project Export');
@@ -266,6 +401,36 @@ class ProjectExporter {
         console.log('ProjectExporter: Constructor called');
         this.outputChannel.appendLine('ProjectExporter: Constructor completed');
     }
+
+private generateFileLinks(items: ProjectStructure[]): Array<{name: string, anchor: string}> {
+    const links: Array<{name: string, anchor: string}> = [];
+    
+    const processItems = (items: ProjectStructure[]) => {
+        for (const item of items) {
+            if (item.type === 'directory' && item.children) {
+                processItems(item.children);
+            } else if (item.type === 'file' && this.isTextFile(item.path)) {
+                const workspaceRoot = vscode.workspace.workspaceFolders![0].uri.fsPath;
+                const relativePath = path.relative(workspaceRoot, item.path);
+                const normalizedPath = relativePath.replace(/\\/g, '/');
+                
+                const anchor = normalizedPath
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]/g, '-')
+                    .replace(/-+/g, '-')
+                    .replace(/^-|-$/g, '');
+                
+                links.push({
+                    name: normalizedPath,
+                    anchor: `📄-${anchor}`
+                });
+            }
+        }
+    };
+    
+    processItems(items);
+    return links;
+}
 
     private getExtensionVersion(): string {
         try {
@@ -309,6 +474,7 @@ class ProjectExporter {
             maxFileSize: config.get('maxFileSize', 1048576), // 1MB
             excludePatterns: config.get('excludePatterns', []),
             outputFileName: config.get('outputFileName', '{workspaceName}-output'),
+            outputFormat: config.get('outputFormat', 'both'),
             notificationLevel: config.get('notificationLevel', 'minimal')
         };
         console.log('ProjectExporter: Configuration loaded:', configObj);
@@ -321,49 +487,49 @@ class ProjectExporter {
         console.log(`ProjectExporter: Configuration updated`);
     }
 
-    private getExpectedOutputFileName(workspacePath: string): string {
-        const config = this.getConfig();
-        return this.generateOutputFileName(config, workspacePath);
-    }
-
-    private async deleteExistingOutputFile(workspacePath: string): Promise<void> {
+    private async deleteExistingOutputFile(workspacePath: string, extension: string): Promise<void> {
         try {
-            const outputFileName = this.getExpectedOutputFileName(workspacePath);
+            const outputFileName = this.generateOutputFileName(this.getConfig(), workspacePath, extension);
             const outputFilePath = path.join(workspacePath, outputFileName);
             
-            console.log(`ProjectExporter: Checking for existing output file: ${outputFilePath}`);
+            console.log(`ProjectExporter: Checking for existing ${extension.toUpperCase()} output file: ${outputFilePath}`);
             
-            // Verificar se o arquivo existe
             try {
                 await fs.promises.access(outputFilePath);
-                console.log(`ProjectExporter: Found existing output file, deleting: ${outputFileName}`);
+                console.log(`ProjectExporter: Found existing ${extension.toUpperCase()} output file, deleting: ${outputFileName}`);
                 
-                // Deletar o arquivo existente
                 await fs.promises.unlink(outputFilePath);
-                console.log(`ProjectExporter: Successfully deleted existing output file: ${outputFileName}`);
+                console.log(`ProjectExporter: Successfully deleted existing ${extension.toUpperCase()} output file: ${outputFileName}`);
                 
-                // Informar usuário sobre a limpeza
                 const message = this.getLocalizedString('export.cleanedPrevious', `Cleaned previous output file: ${outputFileName}`);
                 this.outputChannel.appendLine(message);
                 
             } catch (accessError) {
-                // Arquivo não existe, ok para prosseguir
-                console.log(`ProjectExporter: No existing output file found: ${outputFileName}`);
+                console.log(`ProjectExporter: No existing ${extension.toUpperCase()} output file found: ${outputFileName}`);
             }
             
         } catch (error) {
-            console.error('ProjectExporter: Error during output file cleanup:', error);
-            // Não falhar a operação se a limpeza falhar
+            console.error(`ProjectExporter: Error during ${extension.toUpperCase()} output file cleanup:`, error);
             const errorMsg = this.getLocalizedString('export.cleanupError', 'Warning: Could not clean previous output file');
             this.outputChannel.appendLine(`WARNING: ${errorMsg} - ${error}`);
         }
     }
 
     private isCurrentOutputFile(filePath: string, workspacePath: string): boolean {
-        const expectedOutputFileName = this.getExpectedOutputFileName(workspacePath);
+        const config = this.getConfig();
         const fileName = path.basename(filePath);
         
-        const isCurrentOutput = fileName === expectedOutputFileName;
+        let isCurrentOutput = false;
+        
+        if (config.outputFormat === OutputFormat.BOTH || config.outputFormat === OutputFormat.TXT) {
+            const expectedTxtFileName = this.generateOutputFileName(config, workspacePath, 'txt');
+            isCurrentOutput = isCurrentOutput || fileName === expectedTxtFileName;
+        }
+        
+        if (config.outputFormat === OutputFormat.BOTH || config.outputFormat === OutputFormat.MD) {
+            const expectedMdFileName = this.generateOutputFileName(config, workspacePath, 'md');
+            isCurrentOutput = isCurrentOutput || fileName === expectedMdFileName;
+        }
         
         if (isCurrentOutput) {
             console.log(`ProjectExporter: Excluding current output file: ${fileName}`);
@@ -375,12 +541,11 @@ class ProjectExporter {
     private isLikelyOutputFile(filePath: string): boolean {
         const fileName = path.basename(filePath);
         
-        // Padrões que indicam arquivo de output da extensão
         const outputPatterns = [
-            /-ESTRUTURA-E-ARQUIVOS-DO-PROJETO\.txt$/i,
-            /-output\.txt$/i,
-            /-project-export\.txt$/i,
-            /-full-project\.txt$/i
+            /-ESTRUTURA-E-ARQUIVOS-DO-PROJETO\.(txt|md)$/i,
+            /-output\.(txt|md)$/i,
+            /-project-export\.(txt|md)$/i,
+            /-full-project\.(txt|md)$/i
         ];
         
         const isLikelyOutput = outputPatterns.some(pattern => pattern.test(fileName));
@@ -474,7 +639,6 @@ class ProjectExporter {
             const regex = new RegExp(regexPattern);
             const matches = regex.test(filePath);
             
-            // Debug logging
             if (matches) {
                 console.log(`ProjectExporter: Pattern "${pattern}" (regex: ${regexPattern}) matched: ${filePath}`);
             }
@@ -486,22 +650,229 @@ class ProjectExporter {
         }
     }
 
-    private generateOutputFileName(config: ExtensionConfig, workspacePath: string): string {
+    private generateOutputFileName(config: ExtensionConfig, workspacePath: string, extension: string): string {
         const workspaceName = path.basename(workspacePath).trim().replace(/\s+/g, '-');
         let fileName = config.outputFileName.trim();
         
         fileName = fileName.replace(/\{workspaceName\}/g, workspaceName);
-        
         fileName = fileName.replace(/\s+/g, '-');
-        
         fileName = fileName.replace(/[<>:"/\\|?*]/g, '-');
+        fileName = fileName.replace(/\.(txt|md)$/i, '');
         
-        fileName = fileName.replace(/\.txt$/i, '');
-        
-        fileName = `${fileName}.txt`;
+        fileName = `${fileName}.${extension}`;
         
         console.log(`ProjectExporter: Generated output filename: ${fileName}`);
         return fileName;
+    }
+
+    private async generateMarkdownContent(
+        projectName: string, 
+        structure: ProjectStructure[], 
+        config: ExtensionConfig,
+        extensionInfo: any,
+        now: Date,
+        timezone: string,
+        gmtString: string
+    ): Promise<string> {
+        let content = `# 📁 PROJECT EXPORT FOR LLMs\n\n`;
+        
+        // Project metadata
+        content += `## 📊 Project Information\n\n`;
+        content += `- **Project Name**: \`${projectName}\`\n`;
+        content += `- **Generated On**: ${now.toISOString().replace('T', ' ').substring(0, 19)} (${timezone} / ${gmtString})\n`;
+        content += `- **Total Files Processed**: ${this.countFiles(structure)}\n`;
+        content += `- **Export Tool**: ${extensionInfo.displayName} v${extensionInfo.version}\n`;
+        content += `- **Tool Author**: Jota / José Guilherme Pandolfi\n\n`;
+
+        // Used export configs
+        content += `### ⚙️ Export Configuration\n\n`;
+        content += `| Setting | Value |\n`;
+        content += `|---------|-------|\n`;
+        content += `| Language | \`${config.language}\` |\n`;
+        content += `| Max File Size | \`${this.formatFileSize(config.maxFileSize)}\` |\n`;
+        content += `| Include Hidden Files | \`${config.includeHiddenFiles}\` |\n`;
+        content += `| Output Format | \`${config.outputFormat}\` |\n\n`;
+
+        // Project structure
+        content += `## 🌳 Project Structure\n\n`;
+        content += `\`\`\`\n`;
+        content += this.generateTreeStructure(structure);
+        content += `\`\`\`\n\n`;
+
+        // Table of contents
+        content += this.generateTableOfContents(structure);
+
+        // Project stats
+        const stats = this.generateProjectStats(structure);
+        content += `## 📈 Project Statistics\n\n`;
+        content += `| Metric | Count |\n`;
+        content += `|--------|-------|\n`;
+        content += `| Total Files | ${stats.totalFiles} |\n`;
+        content += `| Total Directories | ${stats.totalDirectories} |\n`;
+        content += `| Text Files | ${stats.textFiles} |\n`;
+        content += `| Binary Files | ${stats.binaryFiles} |\n`;
+        content += `| Total Size | ${this.formatFileSize(stats.totalSize)} |\n\n`;
+
+        // File types
+        if (stats.fileTypes.size > 0) {
+            content += `### 📄 File Types Distribution\n\n`;
+            content += `| Extension | Count |\n`;
+            content += `|-----------|-------|\n`;
+            Array.from(stats.fileTypes.entries())
+                .sort((a, b) => b[1] - a[1])
+                .forEach(([ext, count]) => {
+                    content += `| \`${ext || 'no extension'}\` | ${count} |\n`;
+                });
+            content += `\n`;
+        }
+
+        content += `## 💻 File Code Contents\n\n`;
+        content += await this.generateMarkdownFileContent(structure, config);
+
+        return content;
+    }
+
+    private generateProjectStats(items: ProjectStructure[]): {
+        totalFiles: number;
+        totalDirectories: number;
+        textFiles: number;
+        binaryFiles: number;
+        totalSize: number;
+        fileTypes: Map<string, number>;
+    } {
+        const stats = {
+            totalFiles: 0,
+            totalDirectories: 0,
+            textFiles: 0,
+            binaryFiles: 0,
+            totalSize: 0,
+            fileTypes: new Map<string, number>()
+        };
+
+        const processItems = (items: ProjectStructure[]) => {
+            for (const item of items) {
+                if (item.type === 'directory') {
+                    stats.totalDirectories++;
+                    if (item.children) {
+                        processItems(item.children);
+                    }
+                } else {
+                    stats.totalFiles++;
+                    stats.totalSize += item.size || 0;
+                    
+                    if (this.isTextFile(item.path)) {
+                        stats.textFiles++;
+                    } else {
+                        stats.binaryFiles++;
+                    }
+
+                    const ext = item.extension || '';
+                    stats.fileTypes.set(ext, (stats.fileTypes.get(ext) || 0) + 1);
+                }
+            }
+        };
+
+        processItems(items);
+        return stats;
+    }
+
+    private async generateMarkdownFileContent(items: ProjectStructure[], config: ExtensionConfig): Promise<string> {
+        let content = '';
+        const binaryFiles: string[] = [];
+
+        for (const item of items) {
+            if (item.type === 'directory' && item.children) {
+                content += await this.generateMarkdownFileContent(item.children, config);
+            } else if (item.type === 'file') {
+                const workspaceRoot = vscode.workspace.workspaceFolders![0].uri.fsPath;
+                const relativePath = path.relative(workspaceRoot, item.path);
+                const normalizedPath = relativePath.replace(/\\/g, '/');
+                
+                if (this.isTextFile(item.path) && (item.size || 0) <= config.maxFileSize) {
+                    try {
+                        const fileContent = await fs.promises.readFile(item.path, 'utf-8');
+                        const language = this.getLanguageFromExtension(item.extension || '');
+                        
+                        // File anchor link
+                        const anchor = normalizedPath
+                            .toLowerCase()
+                            .replace(/[^a-z0-9]/g, '-')
+                            .replace(/-+/g, '-')
+                            .replace(/^-|-$/g, '');
+
+                        content += `### <a id="📄-${anchor}"></a>📄 \`${normalizedPath}\`\n\n`;
+                        
+                        // File info
+                        content += `**File Info:**\n`;
+                        content += `- **Size**: ${this.formatFileSize(item.size || 0)}\n`;
+                        content += `- **Extension**: \`${item.extension || 'none'}\`\n`;
+                        content += `- **Language**: \`${language}\`\n`;
+                        content += `- **Location**: \`${normalizedPath}\`\n`;
+                        content += `- **Relative Path**: \`${path.dirname(normalizedPath) === '.' ? 'root' : path.dirname(normalizedPath)}\`\n`;
+                        
+                        // File stats
+                        try {
+                            const stats = await fs.promises.stat(item.path);
+                            content += `- **Created**: ${this.formatTimestampWithTimezone(stats.birthtime)}\n`;
+                            content += `- **Modified**: ${this.formatTimestampWithTimezone(stats.mtime)}\n`;
+                        } catch (error) {
+                            content += `- **Created**: Unable to retrieve\n`;
+                            content += `- **Modified**: Unable to retrieve\n`;
+                        }
+                        
+                        // Hashes
+                        content += `- **MD5**: \`${this.calculateMD5(item.path)}\`\n`;
+                        content += `- **SHA256**: \`${this.calculateSHA256(item.path)}\`\n`;
+                        
+                        // Encoding
+                        content += `- **Encoding**: ${this.detectEncoding(item.path)}\n`;
+                        
+                        content += `\n`;
+                        
+                        content += `**File code content:**\n\n`;
+                        
+                        if (item.extension?.toLowerCase() === '.md') {
+                            content += this.escapeMarkdownContent(fileContent);
+                        } else {
+                            content += `\`\`\`${language}\n`;
+                            content += fileContent;
+                            content += `\n\`\`\`\n\n`;
+                        }
+                        
+                        content += `---\n\n`;
+                    } catch (error) {
+                        console.error(`Error reading file ${item.path}:`, error);
+                        binaryFiles.push(normalizedPath);
+                    }
+                } else {
+                    binaryFiles.push(normalizedPath);
+                }
+            }
+        }
+
+        // Ignored binaries
+        if (binaryFiles.length > 0) {
+            content += `## 🚫 Binary/Excluded Files\n\n`;
+            content += `The following files were not included in the text content:\n\n`;
+            binaryFiles.forEach(file => {
+                content += `- \`${file}\`\n`;
+            });
+            content += `\n`;
+        }
+
+        return content;
+    }
+    
+    private escapeMarkdownContent(content: string): string {
+        let escapedContent = content;
+        
+        escapedContent = escapedContent.replace(/```/g, '~~~~');
+        
+        return `\`\`\`\`markdown\n${escapedContent}\n\`\`\`\`\n\n`;
+    }
+
+    private getLanguageFromExtension(extension: string): string {
+        return this.languageMap[extension.toLowerCase()] || 'text';
     }
 
     private async buildProjectStructure(dirPath: string, config: ExtensionConfig): Promise<ProjectStructure[]> {
@@ -587,22 +958,55 @@ class ProjectExporter {
             if (item.type === 'directory' && item.children) {
                 content += await this.generateFileContent(item.children, config);
             } else if (item.type === 'file') {
-                const relativePath = path.relative(vscode.workspace.workspaceFolders![0].uri.fsPath, item.path);
+                const workspaceRoot = vscode.workspace.workspaceFolders![0].uri.fsPath;
+                const relativePath = path.relative(workspaceRoot, item.path);
+                const normalizedPath = relativePath.replace(/\\/g, '/');
 
                 if (this.isTextFile(item.path) && (item.size || 0) <= config.maxFileSize) {
                     try {
                         const fileContent = await fs.promises.readFile(item.path, 'utf-8');
+                        const language = this.getLanguageFromExtension(item.extension || '');
+                        
                         content += `\n\n${'='.repeat(80)}\n`;
-                        content += `FILE: ${relativePath}\n`;
+                        content += `FILE: ${normalizedPath}\n`;
                         content += `${'='.repeat(80)}\n`;
+                        
+                        // NOVA SEÇÃO: Informações expandidas do arquivo
+                        content += `\nFILE INFORMATION:\n`;
+                        content += `${'-'.repeat(40)}\n`;
+                        content += `Size: ${this.formatFileSize(item.size || 0)}\n`;
+                        content += `Extension: ${item.extension || 'none'}\n`;
+                        content += `Language: ${language}\n`;
+                        content += `Location: ${normalizedPath}\n`;
+                        content += `Relative Path: ${path.dirname(normalizedPath) === '.' ? 'root' : path.dirname(normalizedPath)}\n`;
+                        
+                        // Timestamps
+                        try {
+                            const stats = await fs.promises.stat(item.path);
+                            content += `Created: ${this.formatTimestampWithTimezone(stats.birthtime)}\n`;
+                            content += `Modified: ${this.formatTimestampWithTimezone(stats.mtime)}\n`;
+                        } catch (error) {
+                            content += `Created: Unable to retrieve\n`;
+                            content += `Modified: Unable to retrieve\n`;
+                        }
+                        
+                        // Hashes
+                        content += `MD5: ${this.calculateMD5(item.path)}\n`;
+                        content += `SHA256: ${this.calculateSHA256(item.path)}\n`;
+                        
+                        // Encoding
+                        content += `Encoding: ${this.detectEncoding(item.path)}\n`;
+                        
+                        content += `\nFILE CONTENT:\n`;
+                        content += `${'-'.repeat(40)}\n`;
                         content += fileContent;
                         content += `\n${'='.repeat(80)}\n`;
                     } catch (error) {
                         console.error(`Error reading file ${item.path}:`, error);
-                        binaryFiles.push(relativePath);
+                        binaryFiles.push(normalizedPath);
                     }
                 } else {
-                    binaryFiles.push(relativePath);
+                    binaryFiles.push(normalizedPath);
                 }
             }
         }
@@ -642,63 +1046,136 @@ class ProjectExporter {
 
         console.log(`ProjectExporter: Starting export for project: ${projectName}`);
         console.log(`ProjectExporter: Workspace path: ${workspacePath}`);
+        console.log(`ProjectExporter: Output format: ${config.outputFormat}`);
         
         this.outputChannel.appendLine('Starting project export...');
         this.notificationManager.showLocalizedInfo('export.starting', NotificationType.EXPORT_STARTING);
 
         try {
-            // Clean existing output file
-            console.log('ProjectExporter: Cleaning existing output file...');
-            await this.deleteExistingOutputFile(workspacePath);
+            // Clean previous files
+            console.log('ProjectExporter: Cleaning existing output files...');
+            if (config.outputFormat === OutputFormat.BOTH || config.outputFormat === OutputFormat.TXT) {
+                await this.deleteExistingOutputFile(workspacePath, 'txt');
+            }
+            if (config.outputFormat === OutputFormat.BOTH || config.outputFormat === OutputFormat.MD) {
+                await this.deleteExistingOutputFile(workspacePath, 'md');
+            }
 
             // Build project structure
             console.log('ProjectExporter: Building project structure...');
             const structure = await this.buildProjectStructure(workspacePath, config);
             console.log(`ProjectExporter: Structure built with ${this.countFiles(structure)} files`);
 
-            // Dynamically get extension info
+            // Get extension info
             const extensionInfo = this.getExtensionInfo();
             console.log(`ProjectExporter: Using extension version: ${extensionInfo.version}`);
 
-            // Generate current date/time with timezone
+            // Generate timestamp
             const now = new Date();
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
             const gmtOffset = now.getTimezoneOffset();
             const gmtString = `GMT${gmtOffset <= 0 ? '+' : '-'}${Math.abs(Math.floor(gmtOffset / 60)).toString().padStart(2, '0')}:${Math.abs(gmtOffset % 60).toString().padStart(2, '0')}`;
 
-            // Generate content
-            console.log('ProjectExporter: Generating file content...');
-            let content = `${'='.repeat(100)}\n`;
-            content += `PROJECT EXPORT FOR LLMs\n`;
-            content += `${'='.repeat(100)}\n\n`;
-            content += `Project Name: ${projectName}\n`;
-            content += `Generated on: ${now.toISOString().replace('T', ' ').substring(0, 19)} (${timezone} / ${gmtString})\n`;
-            content += `Total Files Processed: ${this.countFiles(structure)}\n`;
-            content += `Export Tool: ${extensionInfo.displayName} v${extensionInfo.version}\n`;
-            content += `Tool Author: Jota / José Guilherme Pandolfi\n\n`;
+            const generatedFiles: string[] = [];
 
-            content += `${'='.repeat(80)}\n`;
-            content += `PROJECT STRUCTURE\n`;
-            content += `${'='.repeat(80)}\n`;
-            content += this.generateTreeStructure(structure);
+            // Generate text output (if asked)
+            if (config.outputFormat === OutputFormat.BOTH || config.outputFormat === OutputFormat.TXT) {
+                console.log('ProjectExporter: Generating enhanced TXT content...');
+                
+                let txtContent = `${'='.repeat(100)}\n`;
+                txtContent += `PROJECT EXPORT FOR LLMs\n`;
+                txtContent += `${'='.repeat(100)}\n\n`;
+                
+                txtContent += `PROJECT INFORMATION:\n`;
+                txtContent += `${'-'.repeat(50)}\n`;
+                txtContent += `Project Name: ${projectName}\n`;
+                txtContent += `Generated On: ${now.toISOString().replace('T', ' ').substring(0, 19)} (${timezone} / ${gmtString})\n`;
+                txtContent += `Total Files Processed: ${this.countFiles(structure)}\n`;
+                txtContent += `Export Tool: ${extensionInfo.displayName} v${extensionInfo.version}\n`;
+                txtContent += `Tool Author: Jota / José Guilherme Pandolfi\n\n`;
 
-            content += `\n${'='.repeat(80)}\n`;
-            content += `FILE CONTENTS\n`;
-            content += `${'='.repeat(80)}\n`;
-            content += await this.generateFileContent(structure, config);
+                txtContent += `EXPORT CONFIGURATION:\n`;
+                txtContent += `${'-'.repeat(50)}\n`;
+                txtContent += `Language: ${config.language}\n`;
+                txtContent += `Max File Size: ${this.formatFileSize(config.maxFileSize)}\n`;
+                txtContent += `Include Hidden Files: ${config.includeHiddenFiles}\n`;
+                txtContent += `Output Format: ${config.outputFormat}\n`;
+                txtContent += `Notification Level: ${config.notificationLevel}\n`;
+                txtContent += `Custom File Name Pattern: ${config.outputFileName}\n\n`;
 
-            // Save file
-            const fileName = this.generateOutputFileName(config, workspacePath);
-            const filePath = path.join(workspacePath, fileName);
-            
-            console.log(`ProjectExporter: Saving file to: ${filePath}`);
-            await fs.promises.writeFile(filePath, content, 'utf-8');
-            console.log('ProjectExporter: File saved successfully');
+                txtContent += `${'='.repeat(80)}\n`;
+                txtContent += `PROJECT STRUCTURE\n`;
+                txtContent += `${'='.repeat(80)}\n`;
+                txtContent += this.generateTreeStructure(structure);
 
-            // Success message
-            this.notificationManager.showLocalizedSuccess('export.success', fileName);
-            this.outputChannel.appendLine(`Project exported successfully to: ${fileName}`);
-            console.log(`ProjectExporter: Export completed successfully: ${fileName}`);
+                const stats = this.generateProjectStats(structure);
+                txtContent += `\n${'='.repeat(80)}\n`;
+                txtContent += `PROJECT STATISTICS\n`;
+                txtContent += `${'='.repeat(80)}\n`;
+                txtContent += `Total Files: ${stats.totalFiles}\n`;
+                txtContent += `Total Directories: ${stats.totalDirectories}\n`;
+                txtContent += `Text Files: ${stats.textFiles}\n`;
+                txtContent += `Binary Files: ${stats.binaryFiles}\n`;
+                txtContent += `Total Size: ${this.formatFileSize(stats.totalSize)}\n\n`;
+
+                if (stats.fileTypes.size > 0) {
+                    txtContent += `FILE TYPES DISTRIBUTION:\n`;
+                    txtContent += `${'-'.repeat(30)}\n`;
+                    Array.from(stats.fileTypes.entries())
+                        .sort((a, b) => b[1] - a[1])
+                        .forEach(([ext, count]) => {
+                            const extension = ext || 'no extension';
+                            txtContent += `${extension.padEnd(15)} : ${count}\n`;
+                        });
+                    txtContent += `\n`;
+                }
+
+                txtContent += `${'='.repeat(80)}\n`;
+                txtContent += `FILE CODE CONTENTS\n`;
+                txtContent += `${'='.repeat(80)}\n`;
+                txtContent += await this.generateFileContent(structure, config);
+
+                const txtFileName = this.generateOutputFileName(config, workspacePath, 'txt');
+                const txtFilePath = path.join(workspacePath, txtFileName);
+                
+                console.log(`ProjectExporter: Saving enhanced TXT file to: ${txtFilePath}`);
+                await fs.promises.writeFile(txtFilePath, txtContent, 'utf-8');
+                generatedFiles.push(txtFileName);
+            }
+
+            // Generate markdown output (if asked)
+            if (config.outputFormat === OutputFormat.BOTH || config.outputFormat === OutputFormat.MD) {
+                console.log('ProjectExporter: Generating Markdown content...');
+                
+                // CORREÇÃO AQUI: Usar await para generateMarkdownContent
+                const mdContent = await this.generateMarkdownContent(
+                    projectName,
+                    structure,
+                    config,
+                    extensionInfo,
+                    now,
+                    timezone,
+                    gmtString
+                );
+
+                const mdFileName = this.generateOutputFileName(config, workspacePath, 'md');
+                const mdFilePath = path.join(workspacePath, mdFileName);
+                
+                console.log(`ProjectExporter: Saving Markdown file to: ${mdFilePath}`);
+                await fs.promises.writeFile(mdFilePath, mdContent, 'utf-8');
+                generatedFiles.push(mdFileName);
+            }
+
+            // Sucess message
+            if (generatedFiles.length === 1) {
+                this.notificationManager.showLocalizedSuccess('export.success', generatedFiles[0]);
+                this.outputChannel.appendLine(`Project exported successfully to: ${generatedFiles[0]}`);
+            } else {
+                this.notificationManager.showLocalizedSuccess('export.success.multiple', generatedFiles[0], generatedFiles[1]);
+                this.outputChannel.appendLine(`Project exported successfully to: ${generatedFiles.join(' and ')}`);
+            }
+
+            console.log(`ProjectExporter: Export completed successfully: ${generatedFiles.join(', ')}`);
 
         } catch (error) {
             this.notificationManager.showLocalizedError('export.error', String(error));
@@ -711,9 +1188,9 @@ class ProjectExporter {
         return config.outputFileName;
     }
 
-    public getCurrentOutputFileName(workspacePath: string): string {
+    public getCurrentOutputFileName(workspacePath: string, extension: string = 'txt'): string {
         const config = this.getConfig();
-        return this.generateOutputFileName(config, workspacePath);
+        return this.generateOutputFileName(config, workspacePath, extension);
     }
 
     private countFiles(items: ProjectStructure[]): number {
@@ -839,17 +1316,19 @@ export function activate(context: vscode.ExtensionContext) {
 
     const configChangeListener = vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration('easyProjectExport.language') || 
-            event.affectsConfiguration('easyProjectExport.notificationLevel')) {
+            event.affectsConfiguration('easyProjectExport.notificationLevel') ||
+            event.affectsConfiguration('easyProjectExport.outputFormat')) { 
             
             console.log('Configuration changed');
             
             const newConfig = vscode.workspace.getConfiguration('easyProjectExport');
             const newLanguage = newConfig.get('language', 'en');
             const newNotificationLevel = newConfig.get('notificationLevel', 'minimal');
+            const newOutputFormat = newConfig.get('outputFormat', 'both');
             
             console.log(`Updating language to: ${newLanguage}`);
             console.log(`Updating notification level to: ${newNotificationLevel}`);
-            
+            console.log(`Updating output format to: ${newOutputFormat}`);
             localizationManager.setLanguage(newLanguage);
             notificationManager.setNotificationLevel(newNotificationLevel);
             commandManager.updateNotificationLevel(newNotificationLevel);
@@ -861,6 +1340,7 @@ export function activate(context: vscode.ExtensionContext) {
                 maxFileSize: newConfig.get('maxFileSize', 1048576),
                 excludePatterns: newConfig.get('excludePatterns', []),
                 outputFileName: newConfig.get('outputFileName', '{workspaceName}-output'),
+                outputFormat: newOutputFormat,
                 notificationLevel: newNotificationLevel
             });
             

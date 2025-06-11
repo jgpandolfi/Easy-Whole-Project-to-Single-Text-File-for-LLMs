@@ -8,5 +8,6 @@
   "config.maxFileSize.description": "Maximum file size in bytes to include (1MB default)",
   "config.excludePatterns.description": "Patterns to exclude from export",
   "config.outputFileName.description": "Custom output file name pattern. Use {workspaceName} for workspace name. Spaces will be replaced with hyphens",
-  "config.notificationLevel.description": "Control the level of notifications shown by the extension"
+  "config.notificationLevel.description": "Control the level of notifications shown by the extension",
+  "config.outputFormat.description": "Choose output file format: Both (TXT + MD), Text only, or Markdown only"
 }

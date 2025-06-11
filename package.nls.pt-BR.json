@@ -8,5 +8,6 @@
   "config.maxFileSize.description": "Tamanho máximo do arquivo em bytes para incluir (1MB padrão)",
   "config.excludePatterns.description": "Padrões para excluir da exportação",
   "config.outputFileName.description": "Padrão personalizado para nome do arquivo de saída. Use {workspaceName} para nome do workspace. Espaços serão substituídos por hífens",
-  "config.notificationLevel.description": "Controlar o nível de notificações exibidas pela extensão"
+  "config.notificationLevel.description": "Controlar o nível de notificações exibidas pela extensão",
+  "config.outputFormat.description": "Escolher formato do arquivo de saída: Ambos (TXT + MD), Apenas texto, ou Apenas Markdown"
 }

@@ -44,14 +44,11 @@
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
-      "title": "%config.title%",
+      "title": "Easy Whole Project to Single Text File for LLMs",
       "properties": {
         "easyProjectExport.language": {
           "type": "string",
-          "enum": [
-            "en",
-            "pt-BR"
-          ],
+          "enum": ["en", "pt-BR"],
           "default": "en",
           "description": "%config.language.description%"
         },
@@ -92,46 +89,19 @@
           "default": "{workspaceName}-output",
           "description": "%config.outputFileName.description%"
         },
+        "easyProjectExport.outputFormat": {
+          "type": "string",
+          "enum": ["both", "txt", "md"],
+          "default": "both",
+          "description": "%config.outputFormat.description%"
+        },
         "easyProjectExport.notificationLevel": {
           "type": "string",
-          "enum": [
-            "silent",
-            "minimal",
-            "all"
-          ],
+          "enum": ["silent", "minimal", "all"],
           "default": "minimal",
           "description": "%config.notificationLevel.description%"
         }
       }
-    },
-    "commands": [
-      {
-        "command": "easyProjectExport.exportProject",
-        "title": "%command.exportProject.title%"
-      },
-      {
-        "command": "easyProjectExport.toggleAutoExport",
-        "title": "%command.toggleAutoExport.title%"
-      }
-    ],
-    "menus": {
-      "explorer/context": [
-        {
-          "command": "easyProjectExport.exportProject",
-          "group": "1_modification",
-          "when": "explorerResourceIsFolder"
-        }
-      ],
-      "commandPalette": [
-        {
-          "command": "easyProjectExport.exportProject",
-          "when": "workspaceFolderCount > 0"
-        },
-        {
-          "command": "easyProjectExport.toggleAutoExport",
-          "when": "workspaceFolderCount > 0"
-        }
-      ]
     }
   },
   "scripts": {

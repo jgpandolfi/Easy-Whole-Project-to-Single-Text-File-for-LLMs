@@ -5,7 +5,7 @@
 [![Rating](https://img.shields.io/visual-studio-marketplace/r/jgpandolfi.easy-whole-project-to-single-text-file-for-llms)](https://marketplace.visualstudio.com/items?itemName=jgpandolfi.easy-whole-project-to-single-text-file-for-llms)
 [![License](https://img.shields.io/github/license/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs)](https://github.com/jgpandolfi/Easy-Whole-Project-to-Single-Text-File-for-LLMs/blob/main/LICENSE)
 
-Transform your entire project into a single, well-structured text file perfect for sharing with AI tools and Large Language Models (LLMs) like ChatGPT, Claude, Gemini, and others.
+Transform your entire project into a single, well-structured text and/or markdown file perfect for sharing with AI tools and Large Language Models (LLMs) like ChatGPT, Claude, Gemini, and others.
 
 ## ✨ Features
 
@@ -14,13 +14,19 @@ Transform your entire project into a single, well-structured text file perfect f
 - Instantly generates comprehensive project documentation
 - Configurable auto-export settings
 
+### 🚀 **Multi-Format Output Support**
+- **Simple text (.txt) Generation**: Easy way to quick get a single file covering your entire project
+- **Markdown (.md) Generation**: Create structured markdown files optimized for AI/LLM consumption
+- **Flexible Format Selection**: Choose between text-only, markdown-only, or both formats simultaneously
+- **AI-Optimized Structure**: Hierarchical headers, syntax highlighting, and navigable table of contents
+
 ### 📁 **Complete Project Structure**
 - Visual tree representation of your project hierarchy
 - File sizes and counts for easy reference
 - Emoji icons for better readability
 
-### 💻 **Extensive File Type Support**
-Supports 50+ file extensions including:
+### 💻 **Extensive Project File Type Support**
+Reads 50+ file extensions including:
 - **Web**: `.html`, `.css`, `.js`, `.jsx`, `.ts`, `.tsx`, `.vue`, `.svelte`
 - **Backend**: `.php`, `.py`, `.cs`, `.java`, `.cpp`, `.c`, `.h`, `.go`, `.rs`
 - **Config**: `.json`, `.xml`, `.yaml`, `.yml`, `.ini`, `.conf`, `.env`
@@ -32,6 +38,21 @@ Supports 50+ file extensions including:
 - Binary file detection and listing
 - Anti-recursion protection to prevent output file inclusion
 - Automatic cleanup of previous exports
+
+### **🤖 Optimized for AI Tools**
+The new markdown format provides superior AI/LLM integration:
+
+- **📋 Structured Navigation**: Table of contents with direct file links
+- **🏷️ Rich Metadata**: File hashes, timestamps, and encoding information  
+- **🎯 Syntax Highlighting**: Language-specific code blocks for 30+ programming languages
+- **📊 Project Statistics**: Comprehensive metrics and file type distribution
+- **🔗 Contextual Links**: Clickable navigation within generated documents
+
+### 📊 **Enhanced Project Files Intelligence**
+- **Comprehensive File Metadata**: MD5/SHA256 hashes, creation/modification timestamps with timezone
+- **Encoding Detection**: Automatic detection of file encoding (ASCII, UTF-8, UTF-16, etc.)
+- **File Relationships**: Clear indication of file location within project hierarchy
+- **Integrity Verification**: Cryptographic checksums for file validation
 
 ### 🌍 **Multi-Language Support**
 - **English** and **Portuguese (Brazil)** interfaces
@@ -91,15 +112,16 @@ The extension automatically generates a text file whenever you save a file in yo
 
 Access settings via `File > Preferences > Settings` and search for "Easy Project Export":
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| **Language** | Interface language (en/pt-BR) | `en` |
-| **Enable On Save** | Auto-export when saving files | `true` |
-| **Output File Name** | Custom filename pattern | `{workspaceName}-output` |
-| **Notification Level** | Control notification frequency | `minimal` |
-| **Include Hidden Files** | Include dot files and folders | `false` |
-| **Max File Size** | Maximum file size to include (bytes) | `1048576` (1MB) |
-| **Exclude Patterns** | Glob patterns to exclude | See defaults above |
+| Setting | Description | Default | New in v1.1.0 |
+|---------|-------------|---------|----------------|
+| **Language** | Interface language (en/pt-BR) | `en` | |
+| **Enable On Save** | Auto-export when saving files | `true` | |
+| **Output File Name** | Custom filename pattern | `{workspaceName}-output` | |
+| **Output Format** | File format selection | `both` | ✅ **NEW** |
+| **Notification Level** | Control notification frequency | `minimal` | |
+| **Include Hidden Files** | Include dot files and folders | `false` | |
+| **Max File Size** | Maximum file size to include (bytes) | `1048576` (1MB) | |
+| **Exclude Patterns** | Glob patterns to exclude | See defaults | |
 
 ### Output Filename Customization
 Use the `{workspaceName}` placeholder in your custom filename:
@@ -111,6 +133,11 @@ Use the `{workspaceName}` placeholder in your custom filename:
 - **Silent**: No pop-up notifications
 - **Minimal**: Only success and error messages (default)
 - **All**: Complete notification experience
+
+### Output Format Options
+- **Both (TXT + MD)**: Generates both `.txt` and `.md` files simultaneously (default)
+- **Text Only**: Generates only `.txt` files (legacy behavior)
+- **Markdown Only**: Generates only `.md` files optimized for AI tools
 
 ## 📄 Output Format
 
@@ -135,7 +162,7 @@ PROJECT STRUCTURE
 │ └── 📄 README.md (3.1 KB)
 └── 📄 package.json (1.2 KB)
 ================================================================================
-FILE CONTENTS
+FILE CODE CONTENTS
 ================================================================================
 FILE: src/index.html
 <!DOCTYPE html> <html> ...
